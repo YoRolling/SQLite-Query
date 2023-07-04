@@ -1,8 +1,9 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, Menu } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { setupIpcHandle } from './libs/ipcHandle'
+import { GlobalMenu } from './libs/menu'
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -16,10 +17,10 @@ function createWindow(): void {
       sandbox: false
     }
   })
-
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
   })
+  Menu.setApplicationMenu(Menu.buildFromTemplate(GlobalMenu))
   setupIpcHandle(mainWindow)
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
