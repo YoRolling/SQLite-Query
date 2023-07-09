@@ -1,4 +1,6 @@
-import { app, MenuItemConstructorOptions } from 'electron'
+import { app, BrowserWindow, KeyboardEvent, MenuItem, MenuItemConstructorOptions } from 'electron'
+import { CONTEXT_MENU, MENU_CLICKED } from '../../common/const'
+import { MenuType } from '../../common/types'
 
 export const GlobalMenu: MenuItemConstructorOptions[] = [
   {
@@ -79,3 +81,81 @@ export const GlobalMenu: MenuItemConstructorOptions[] = [
   }
   // 添加更多菜单项...
 ]
+const itemClicked = (args: unknown) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  return (item: MenuItem, window: BrowserWindow | undefined, _event: KeyboardEvent) => {
+    window?.webContents.send(MENU_CLICKED, { id: item.id, args })
+  }
+}
+export function buildContextMenu(args: {
+  type: MenuType
+  payload: unknown
+}): MenuItemConstructorOptions[] {
+  const { type, payload } = args
+  let result: MenuItemConstructorOptions[] = []
+  switch (type) {
+    case MenuType.CONTEXT_DB:
+      result = buildDatabaseContextMenu(payload)
+      break
+    case MenuType.CONTEXT_TABLE:
+      result = buildTableContextMenu(payload)
+      break
+    case MenuType.CONTEXT_QUERY:
+      break
+    case MenuType.CONTEXT_TABLE_RESULT:
+      break
+  }
+  return result
+}
+
+function buildDatabaseContextMenu(args: unknown): MenuItemConstructorOptions[] {
+  return [
+    {
+      label: 'Create Query',
+      id: CONTEXT_MENU.Create_Query,
+      click: itemClicked(args)
+    },
+    {
+      label: 'Run SQL',
+      id: CONTEXT_MENU.Run_SQL,
+      click: itemClicked(args)
+    },
+    {
+      label: 'Export SQL',
+      id: CONTEXT_MENU.Export_SQL,
+      click: itemClicked(args)
+    },
+    {
+      type: 'separator'
+    },
+    {
+      label: 'Close Database',
+      id: CONTEXT_MENU.Close_Conn,
+      click: itemClicked(args)
+    }
+  ]
+}
+
+function buildTableContextMenu(args: unknown): MenuItemConstructorOptions[] {
+  return [
+    {
+      label: 'Create Query',
+      id: CONTEXT_MENU.Create_Query,
+      click: itemClicked(args)
+    },
+    {
+      label: 'Design Table',
+      id: CONTEXT_MENU.Design_Table,
+      click: itemClicked(args)
+    },
+    {
+      type: 'separator'
+    },
+
+    {
+      label: 'Drop Table',
+      id: CONTEXT_MENU.Drop_Table,
+      click: itemClicked(args)
+    }
+  ]
+}

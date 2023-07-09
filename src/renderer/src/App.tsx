@@ -1,11 +1,14 @@
-import { Button, ColorScheme, ColorSchemeProvider, MantineProvider, AppShell } from '@mantine/core'
+import { AppShell, ColorScheme, ColorSchemeProvider, MantineProvider } from '@mantine/core'
 import { useColorScheme } from '@mantine/hooks'
-import { useState } from 'react'
-import Aside from './components/Aside'
-import { Provider } from 'jotai'
-import LandingPage from './components/Landing'
 import { Notifications } from '@mantine/notifications'
-import useConnection from './hooks/useConnection'
+import Aside from '@renderer/components/Aside'
+import LandingPage from '@renderer/components/Landing'
+import useConnection from '@renderer/hooks/useConnection'
+import { Provider } from 'jotai'
+import { useEffect, useState } from 'react'
+import Handler from './components/Handler'
+import store, { dbList } from './store'
+import MainTab from './components/Main'
 
 function App(): JSX.Element {
   const preferredColorScheme = useColorScheme()
@@ -13,16 +16,27 @@ function App(): JSX.Element {
   const toggleColorScheme = (value?: ColorScheme) =>
     setColorScheme(value || (colorScheme === 'dark' ? 'light' : 'dark'))
   const [connectionList] = useConnection()
+  useEffect(() => {
+    store.set(dbList, connectionList)
+  }, [JSON.stringify(connectionList)])
   return (
     <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
       <MantineProvider withGlobalStyles withNormalizeCSS>
-        <Provider>
+        <Provider store={store}>
           <Notifications />
+          <Handler />
           {connectionList.length > 0 ? (
-            <AppShell aside={<Aside />}>
-              <div className="container">
-                <Button variant="light">Button</Button>
-              </div>
+            <AppShell
+              aside={<Aside />}
+              layout="alt"
+              styles={{
+                main: {
+                  paddingTop: 0,
+                  display: 'flex'
+                }
+              }}
+            >
+              <MainTab />
             </AppShell>
           ) : (
             <LandingPage />

@@ -4,3 +4,14 @@ export const PICK_UP_FILE = 'PICK_UP_FILE'
 export const SETUP_SQLITE_CONNNECTION = 'SETUP_SQLITE_CONNNECT'
 export const CONNECTION_CHANGED = 'CONNECTION_CHANGED'
 export const TAB_CHANGED = 'TAB_CHANGED'
+export const CONN_CLOSE = 'CONN_CLOSE'
+
+export const EXEC_SQL = 'EXEC_SQL'
+export enum CONTEXT_MENU {
+  Create_Query = '10000',
+  Close_Conn = '10001',
+  Export_SQL = '10002',
+  Run_SQL = '10003',
+  Drop_Table = '10004',
+  Design_Table = '10005'
+}
