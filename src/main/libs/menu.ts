@@ -1,6 +1,14 @@
-import { app, BrowserWindow, KeyboardEvent, MenuItem, MenuItemConstructorOptions } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  KeyboardEvent,
+  MenuItem,
+  MenuItemConstructorOptions
+} from 'electron'
 import { CONTEXT_MENU, MENU_CLICKED } from '../../common/const'
 import { MenuType } from '../../common/types'
+import { emitter } from './eventbus'
 
 export const GlobalMenu: MenuItemConstructorOptions[] = [
   {
@@ -9,7 +17,7 @@ export const GlobalMenu: MenuItemConstructorOptions[] = [
       {
         label: 'Create Database',
         accelerator: 'CmdOrCtrl+N',
-        click: (item, window, event) => {
+        click: (_item, _window, _event) => {
           // 处理新建菜单项的点击事件
           // window?.webContents.send()
         }
@@ -113,12 +121,28 @@ function buildDatabaseContextMenu(args: unknown): MenuItemConstructorOptions[] {
     {
       label: 'Create Query',
       id: CONTEXT_MENU.Create_Query,
-      click: itemClicked(args)
+      click: () => {
+        emitter.emit('MENU_CLIKED', {
+          action: CONTEXT_MENU.Create_Query,
+          payload: args
+        })
+      }
     },
     {
       label: 'Run SQL',
       id: CONTEXT_MENU.Run_SQL,
-      click: itemClicked(args)
+      click: () => {
+        dialog
+          .showOpenDialog({
+            filters: [{ name: 'SQL', extensions: ['sql'] }],
+            properties: ['openFile']
+          })
+          .then((value) => {
+            if (!value.canceled) {
+              value.filePaths
+            }
+          })
+      }
     },
     {
       label: 'Export SQL',

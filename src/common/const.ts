@@ -6,6 +6,11 @@ export const CONNECTION_CHANGED = 'CONNECTION_CHANGED'
 export const TAB_CHANGED = 'TAB_CHANGED'
 export const CONN_CLOSE = 'CONN_CLOSE'
 
+export const CLOSE_TAB = 'CLOSE_TAB'
+export const DROP_TABLE = 'DROP_TABLE'
+export const RUN_SQL = 'RUN_SQL'
+export const EXPORT_SQL = 'EXPORT_SQL'
+
 export const EXEC_SQL = 'EXEC_SQL'
 export enum CONTEXT_MENU {
   Create_Query = '10000',

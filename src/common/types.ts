@@ -21,7 +21,7 @@ export enum ConnectionSetupType {
   Memory
 }
 
-export enum ConnectionActionType {
+export enum ActionType {
   Add = 0,
   Remove,
   Patch,
@@ -48,6 +48,8 @@ export type Result = {
   }
 }
 
-export type IpcResult<T> = {
-  error?: Error | string
-} & T
+export type IpcResult<T> =
+  | {
+      error: Error | string
+    }
+  | T

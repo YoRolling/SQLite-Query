@@ -6,12 +6,18 @@ import {
   PICK_UP_FILE,
   SETUP_SQLITE_CONNNECTION
 } from '@src/common/const'
-import { ConnectionSetup, ConnectionSetupType, DialogRetureValue } from '@src/common/types'
+import {
+  ConnectionSetup,
+  ConnectionSetupType,
+  DialogRetureValue,
+  IpcResult
+} from '@src/common/types'
 import { IconFileImport } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { v4 as UUIDV4 } from 'uuid'
 const { ipcRenderer } = window.electron
 import { emitter } from '@renderer/eventbus'
+import { invokeIpc } from '@renderer/utils/ipcHelper'
 export default function Handler() {
   const [opened, toggle] = useState(false)
   useEffect(() => {
@@ -57,7 +63,7 @@ export default function Handler() {
 
   const pickUpFile = async () => {
     try {
-      const result: DialogRetureValue = await ipcRenderer.invoke(PICK_UP_FILE, {
+      const result = await invokeIpc<DialogRetureValue>(PICK_UP_FILE, {
         type: form.getInputProps('type').value
       })
       const { canceled } = result
@@ -88,7 +94,7 @@ export default function Handler() {
   }
   const setupConnection = async () => {
     try {
-      await ipcRenderer.invoke(SETUP_SQLITE_CONNNECTION, form.values)
+      await invokeIpc(SETUP_SQLITE_CONNNECTION, form.values)
     } catch (error) {
       // pass by
     } finally {

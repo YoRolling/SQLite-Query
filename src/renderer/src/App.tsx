@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import Handler from './components/Handler'
 import store, { dbList } from './store'
 import MainTab from './components/Main'
+import { ModalsProvider } from '@mantine/modals'
 
 function App(): JSX.Element {
   const preferredColorScheme = useColorScheme()
@@ -23,24 +24,26 @@ function App(): JSX.Element {
     <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
       <MantineProvider withGlobalStyles withNormalizeCSS>
         <Provider store={store}>
-          <Notifications />
-          <Handler />
-          {connectionList.length > 0 ? (
-            <AppShell
-              aside={<Aside />}
-              layout="alt"
-              styles={{
-                main: {
-                  paddingTop: 0,
-                  display: 'flex'
-                }
-              }}
-            >
-              <MainTab />
-            </AppShell>
-          ) : (
-            <LandingPage />
-          )}
+          <ModalsProvider>
+            <Notifications />
+            <Handler />
+            {connectionList.length > 0 ? (
+              <AppShell
+                aside={<Aside />}
+                layout="alt"
+                styles={{
+                  main: {
+                    paddingTop: 0,
+                    display: 'flex'
+                  }
+                }}
+              >
+                <MainTab />
+              </AppShell>
+            ) : (
+              <LandingPage />
+            )}
+          </ModalsProvider>
         </Provider>
       </MantineProvider>
     </ColorSchemeProvider>

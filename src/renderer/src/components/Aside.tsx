@@ -10,12 +10,12 @@ import {
 } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { dbList } from '@renderer/store'
+import { invokeIpc } from '@renderer/utils/ipcHelper'
 import { BUILD_CONTEXT_MENU, EXEC_SQL } from '@src/common/const'
-import { Connection, IpcResult, MenuType, Result } from '@src/common/types'
+import { Connection, MenuType } from '@src/common/types'
 import { IconDatabase, IconTable } from '@tabler/icons-react'
 import { useStore } from 'jotai'
 import { MouseEvent, useEffect, useState } from 'react'
-const { ipcRenderer } = window.electron
 
 export default function Sidebar() {
   const theme = useMantineTheme()
@@ -26,6 +26,10 @@ export default function Sidebar() {
   useEffect(() => {
     const unSub = store.sub(dbList, () => {
       const list = store.get(dbList)
+      const len = list.length
+      if (list[len - 1] !== undefined) {
+        setActiveConn(list[len - 1].uuid)
+      }
       setConnectionList(list)
     })
     return () => {
@@ -35,30 +39,30 @@ export default function Sidebar() {
 
   useEffect(() => {
     async function selectTables() {
-      const { error, data = [] }: IpcResult<Result> = await ipcRenderer.invoke(EXEC_SQL, {
-        uuid: activedConn,
-        sql: `SELECT * FROM sqlite_master WHERE type='table';`
-      })
-      if (error) {
-        Notifications.show({
-          message: error.toString()
+      try {
+        const { data } = await invokeIpc<{ data: unknown[] }>(EXEC_SQL, {
+          uuid: activedConn,
+          sql: `SELECT * FROM sqlite_master WHERE type='table';`
         })
-        return
+        updateTables(data)
+      } catch (error) {
+        Notifications.show({
+          message: (error as Error).message
+        })
       }
-
-      updateTables(data)
     }
     if (activedConn !== '') {
       selectTables()
     }
   }, [activedConn])
 
-  const onContextMenu = async (event: MouseEvent<HTMLButtonElement>) => {
+  const onContextMenu = async (event: MouseEvent<HTMLButtonElement>, payload: unknown) => {
     event.preventDefault()
     event.stopPropagation()
     try {
-      await window.electron.ipcRenderer.invoke(BUILD_CONTEXT_MENU, {
-        type: MenuType.CONTEXT_DB
+      await invokeIpc(BUILD_CONTEXT_MENU, {
+        type: MenuType.CONTEXT_DB,
+        payload
       })
     } catch (error) {
       console.error('BUILD_CONTEXT_MENU Error:', error)
@@ -98,7 +102,7 @@ export default function Sidebar() {
               label={v.label}
               active={v.opened}
               icon={<IconDatabase size={16} />}
-              onContextMenu={onContextMenu}
+              onContextMenu={(event) => onContextMenu(event, v)}
               onClick={() => setActiveConn(v.uuid)}
             ></NavLink>
           )
