@@ -1,24 +1,26 @@
 import { Tabs, TabsValue, Text } from '@mantine/core'
 import { modals } from '@mantine/modals'
 import { useTabs } from '@renderer/hooks'
-import { Tab } from '@src/common/types'
-import { IconSql, IconX } from '@tabler/icons-react'
-import { useCallback, useMemo } from 'react'
-import QueryTab from './QueryTab'
 import { invokeIpc } from '@renderer/utils/ipcHelper'
 import { CLOSE_TAB, TAB_CHANGED } from '@src/common/const'
+import { Tab } from '@src/common/types'
+import { IconSql, IconX } from '@tabler/icons-react'
+import { useCallback, useMemo, useRef } from 'react'
+import QueryTab, { QueryTabInstance } from './QueryTab'
 
 export default function MainTab() {
   // tabs list
   const tabsList = useTabs()
+
+  const queryTabRef = useRef<QueryTabInstance | null>(null)
   const closeTab = useCallback((tab: Tab) => {
     modals.openConfirmModal({
       title: 'Close Tab?',
       centered: true,
       children: (
         <Text size="sm">
-          Are you sure you want to close this tab ? This action is destructive and you will have to
-          contact support to restore your data.
+          Are you sure you want to close this tab ? This action is destructive
+          and you will have to contact support to restore your data.
         </Text>
       ),
       labels: { confirm: 'Delete Tab', cancel: "No don't delete it" },
@@ -47,6 +49,7 @@ export default function MainTab() {
   const activeKey = useMemo(() => activeTab?.uuid, [activeTab])
 
   const onTabChange = async (value: TabsValue) => {
+    await queryTabRef.current?.syncEditorState()
     await invokeIpc(TAB_CHANGED, value)
   }
   if (tabsList.length === 0) {
@@ -73,7 +76,7 @@ export default function MainTab() {
           )
         })}
       </Tabs.List>
-      <QueryTab tab={activeTab} />
+      <QueryTab tab={activeTab} ref={queryTabRef} />
     </Tabs>
   )
 }

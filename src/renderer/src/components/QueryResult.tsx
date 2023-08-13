@@ -20,12 +20,6 @@ export default function QueryResult({ columns, data }: Props) {
           )
         })}
       </tr>
-      // <tr key={element.name}>
-      //   <td>{element.position}</td>
-      //   <td>{element.name}</td>
-      //   <td>{element.symbol}</td>
-      //   <td>{element.mass}</td>
-      // </tr>
     )
   })
 
