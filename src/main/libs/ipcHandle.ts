@@ -136,6 +136,7 @@ export function setupIpcHandle(window: BrowserWindow) {
   register(BUILD_CONTEXT_MENU, setupContextMenu)
   register(EXEC_SQL, handleSqlExec)
   register(CLOSE_TAB, closeTab)
+  register(TAB_CHANGED, tabsChange)
 }
 function register<T>(channel, handle: (args: T) => unknown) {
   ipcMain.handle(channel, (_event, args: T) => {
@@ -228,14 +229,14 @@ function handleSqlExec(payload: QueryArgs): IpcResult<Result> {
     return { error: new Error('The database is not open, an error may occur ', {}) }
   }
   const connection = connectionMap.get(uuid)
-  const stmt = connection?.prepare(sql)
-  const info = stmt?.run()
-  const data = stmt?.all() ?? []
-  const columns = stmt?.columns() ?? []
-  return {
-    data,
-    columns,
-    info
+  const stmt = connection!.prepare(sql)
+  try {
+    const data = stmt.all()
+    const columns = stmt.columns()
+    return { data, columns }
+  } catch (error) {
+    const result = stmt.run()
+    return { info: result }
   }
 }
 
@@ -244,7 +245,6 @@ function handleInnerEmit() {
     const { action, payload } = args
     switch (action) {
       case CONTEXT_MENU.Create_Query:
-        console.log({ payload })
         tabsSubject.next({
           type: ActionType.Add,
           payload: {
@@ -252,7 +252,8 @@ function handleInnerEmit() {
             uuid: uuid4(),
             subLabel: '',
             relateConn: (payload as Connection).uuid,
-            query: ''
+            query: '',
+            active: true
           }
         })
         break
@@ -266,5 +267,20 @@ function closeTab(tab: Tab) {
   tabsSubject.next({
     type: ActionType.Remove,
     payload: tab
+  })
+}
+
+function tabsChange(value: string) {
+  tabs
+    .filter((v) => v.active)
+    .forEach((v) => {
+      tabsSubject.next({
+        type: ActionType.Patch,
+        payload: { ...v, active: false }
+      })
+    })
+  tabsSubject.next({
+    type: ActionType.Patch,
+    payload: { active: true, uuid: value } as Tab
   })
 }

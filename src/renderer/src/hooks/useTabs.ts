@@ -11,7 +11,6 @@ export default function useTabs() {
 function subscribe(callback) {
   const off = ipcRenderer.on(TAB_CHANGED, (_event, args) => {
     tabs = args
-    console.log(TAB_CHANGED, args)
     callback()
   })
   return () => {

@@ -5,3 +5,4 @@ export const dbList = atom<Connection[]>([])
 const store = createStore()
 store.set(dbList, [])
 export default store
+export * from './tabState'

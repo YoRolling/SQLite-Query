@@ -2,6 +2,7 @@ export type Connection = Omit<ConnectionSetup, 'type'> & {
   opened: boolean
 }
 export type Tab = {
+  active: boolean
   label: string
   subLabel?: string
   uuid: string

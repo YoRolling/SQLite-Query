@@ -1,18 +1,17 @@
-import { Tabs, Text } from '@mantine/core'
+import { Tabs, TabsValue, Text } from '@mantine/core'
 import { modals } from '@mantine/modals'
 import { useTabs } from '@renderer/hooks'
 import { Tab } from '@src/common/types'
 import { IconSql, IconX } from '@tabler/icons-react'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import QueryTab from './QueryTab'
 import { invokeIpc } from '@renderer/utils/ipcHelper'
-import { CLOSE_TAB } from '@src/common/const'
+import { CLOSE_TAB, TAB_CHANGED } from '@src/common/const'
 
 export default function MainTab() {
   // tabs list
   const tabsList = useTabs()
   const closeTab = useCallback((tab: Tab) => {
-    console.log('close Tab')
     modals.openConfirmModal({
       title: 'Close Tab?',
       centered: true,
@@ -36,11 +35,30 @@ export default function MainTab() {
       }
     })
   }, [])
+  const activeTab = useMemo(() => {
+    const actived = tabsList.find((v) => v.active)
+    if (actived) {
+      return actived
+    } else {
+      return tabsList[0]
+    }
+  }, [tabsList])
+
+  const activeKey = useMemo(() => activeTab?.uuid, [activeTab])
+
+  const onTabChange = async (value: TabsValue) => {
+    await invokeIpc(TAB_CHANGED, value)
+  }
   if (tabsList.length === 0) {
     return <></>
   }
+
   return (
-    <Tabs sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <Tabs
+      sx={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%' }}
+      value={activeKey}
+      onTabChange={onTabChange}
+    >
       <Tabs.List>
         {tabsList.map((v) => {
           return (
@@ -55,13 +73,7 @@ export default function MainTab() {
           )
         })}
       </Tabs.List>
-      {tabsList.map((v) => {
-        return (
-          <Tabs.Panel sx={{ flex: 1 }} key={v.uuid} value={v.uuid}>
-            <QueryTab tab={v} />
-          </Tabs.Panel>
-        )
-      })}
+      <QueryTab tab={activeTab} />
     </Tabs>
   )
 }
