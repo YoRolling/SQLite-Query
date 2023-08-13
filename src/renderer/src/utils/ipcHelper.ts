@@ -11,7 +11,10 @@ function unwrap<T extends object>(result: IpcResult<T>) {
   return result
 }
 
-export async function invokeIpc<T extends object>(channel: string, args: unknown) {
+export async function invokeIpc<T extends object>(
+  channel: string,
+  args: unknown
+) {
   const result: IpcResult<T> = await invoke(channel, args)
   return unwrap(result)
 }

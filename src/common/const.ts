@@ -20,3 +20,4 @@ export enum CONTEXT_MENU {
   Drop_Table = '10004',
   Design_Table = '10005'
 }
+export const MSG_BACKEND = 'MSG_BACKEND'

@@ -1,4 +1,11 @@
-import { Modal, TextInput, Space, ActionIcon, Group, Button } from '@mantine/core'
+import {
+  Modal,
+  TextInput,
+  Space,
+  ActionIcon,
+  Group,
+  Button
+} from '@mantine/core'
 import { Form, isNotEmpty, useForm } from '@mantine/form'
 import {
   CONTEXT_MENU,
@@ -9,8 +16,7 @@ import {
 import {
   ConnectionSetup,
   ConnectionSetupType,
-  DialogRetureValue,
-  IpcResult
+  DialogRetureValue
 } from '@src/common/types'
 import { IconFileImport } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
@@ -73,23 +79,23 @@ export default function Handler() {
       const { value } = form.getInputProps('type')
       switch (value) {
         case ConnectionSetupType.Create:
-          form.setFieldValue('path', (result as Electron.SaveDialogReturnValue).filePath!)
+          form.setFieldValue(
+            'path',
+            (result as Electron.SaveDialogReturnValue).filePath!
+          )
           break
         case ConnectionSetupType.Open:
-          form.setFieldValue('path', (result as Electron.OpenDialogReturnValue).filePaths[0])
+          form.setFieldValue(
+            'path',
+            (result as Electron.OpenDialogReturnValue).filePaths[0]
+          )
           break
         case ConnectionSetupType.Memory:
           form.setFieldValue('path', ':memory:')
           break
       }
     } catch (error) {
-      // notifications.show({
-      //   icon: <IconAlertSmall />,
-      //   color: 'red',
-      //   variant: 'danger',
-      //   title: 'Attation',
-      //   message: (error as Error).message
-      // })
+      // pass by
     }
   }
   const setupConnection = async () => {

@@ -9,7 +9,9 @@ export type Tab = {
   relateConn: string
   query: string
 }
-export type DialogRetureValue = Electron.OpenDialogReturnValue | Electron.SaveDialogReturnValue
+export type DialogRetureValue =
+  | Electron.OpenDialogReturnValue
+  | Electron.SaveDialogReturnValue
 export type ConnectionSetup = {
   label: string
   path: string
@@ -26,7 +28,8 @@ export enum ActionType {
   Add = 0,
   Remove,
   Patch,
-  Initial
+  Initial,
+  RemoveAll
 }
 export enum MenuType {
   CONTEXT_DB,
@@ -54,3 +57,15 @@ export type IpcResult<T> =
       error: Error | string
     }
   | T
+
+export type TableInfo = {
+  sql: string
+  type: string
+  name: string
+  tbl_name: string
+  rootpage: number
+}
+
+export enum MSG_BACKEND_TYPE {
+  DATABASE_CHANGED = 'DATABASE_CHANGED'
+}

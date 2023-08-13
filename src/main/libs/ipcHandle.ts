@@ -1,4 +1,4 @@
-import { BrowserWindow, Menu, dialog, ipcMain } from 'electron'
+import { BrowserWindow, Menu, dialog, ipcMain, shell } from 'electron'
 import {
   BUILD_CONTEXT_MENU,
   CLOSE_TAB,
@@ -20,13 +20,17 @@ import {
   ConnectionSetup,
   ConnectionSetupType,
   IpcResult,
+  MSG_BACKEND_TYPE,
   MenuType,
   QueryArgs,
   Result,
-  Tab
+  Tab,
+  TableInfo
 } from '../../common/types'
 import { buildContextMenu } from './menu'
 import { emitter } from './eventbus'
+import { open } from 'fs/promises'
+import { createWriteStream } from 'fs'
 /**
  * Connection Map
  */
@@ -39,7 +43,10 @@ let connectionList: Connection[] = []
 
 let tabs: Tab[] = []
 
-const tabsSubject: Subject<{ type: ActionType; payload: Tab }> = new Subject()
+const tabsSubject: Subject<
+  | { type: ActionType; payload: Tab }
+  | { type: ActionType.RemoveAll; payload: string }
+> = new Subject()
 const connectionSubject: Subject<{
   type: ActionType
   payload?: Database.Database
@@ -55,10 +62,11 @@ export function setupIpcHandle(window: BrowserWindow) {
   tabsSubject
     .pipe(
       filter((v) => {
-        const {
-          type,
-          payload: { uuid }
-        } = v
+        const { type, payload } = v
+        if (type === ActionType.RemoveAll) {
+          return true
+        }
+        const { uuid } = payload
         const target = tabs.find((z) => z.uuid === uuid)
         if (type === ActionType.Add) {
           return target === undefined
@@ -85,6 +93,9 @@ export function setupIpcHandle(window: BrowserWindow) {
               return v
             }
           })
+          break
+        case ActionType.RemoveAll:
+          tabs = tabs.filter((v) => v.relateConn !== (tab as string))
           break
       }
       window.webContents.send(TAB_CHANGED, tabs)
@@ -180,6 +191,12 @@ function closeConnection({ uuid }: { uuid: string }) {
         payload: conn,
         id: uuid
       })
+
+      tabsSubject.next({
+        type: ActionType.RemoveAll,
+        payload: uuid
+      })
+
       return true
     } else {
       return false
@@ -201,7 +218,10 @@ function closeConnection({ uuid }: { uuid: string }) {
 function setupFilePicker(args: { type: ConnectionSetupType }) {
   const { type } = args
   const filters = [
-    { name: 'SQLite DB', extensions: ['sqlite', 'sqlite3', 'db', 'db3', 's3db', 'sl3'] },
+    {
+      name: 'SQLite DB',
+      extensions: ['sqlite', 'sqlite3', 'db', 'db3', 's3db', 'sl3']
+    },
     { name: 'All Files', extensions: ['*'] }
   ]
   if (type === ConnectionSetupType.Create) {
@@ -224,12 +244,13 @@ function setupContextMenu(args: { type: MenuType; payload: unknown }) {
 
 function handleSqlExec(payload: QueryArgs): IpcResult<Result> {
   const { uuid, sql } = payload
-  const hasOpend = connectionMap.has(uuid)
-  if (hasOpend === false) {
-    return { error: new Error('The database is not open, an error may occur ', {}) }
-  }
   const connection = connectionMap.get(uuid)
-  const stmt = connection!.prepare(sql)
+  if (connection === undefined) {
+    return {
+      error: new Error('The database is not open, an error may occur ', {})
+    }
+  }
+  const stmt = connection.prepare(sql)
   try {
     const data = stmt.all()
     const columns = stmt.columns()
@@ -259,6 +280,17 @@ function handleInnerEmit() {
         break
       case CONTEXT_MENU.Close_Conn:
         closeConnection(payload as Connection)
+        break
+      case CONTEXT_MENU.Run_SQL:
+        // eslint-disable-next-line no-case-declarations
+        const {
+          path,
+          args: { uuid }
+        } = payload as { path: string[]; args: Connection }
+        runSQL(uuid, path[0])
+        break
+      case CONTEXT_MENU.Export_SQL:
+        exportSql(payload as Connection)
     }
   })
 }
@@ -271,16 +303,86 @@ function closeTab(tab: Tab) {
 }
 
 function tabsChange(value: string) {
-  tabs
-    .filter((v) => v.active)
-    .forEach((v) => {
-      tabsSubject.next({
-        type: ActionType.Patch,
-        payload: { ...v, active: false }
-      })
-    })
+  tabs = tabs.map((v) => {
+    return { ...v, active: false }
+  })
   tabsSubject.next({
     type: ActionType.Patch,
     payload: { active: true, uuid: value } as Tab
   })
+}
+
+async function runSQL(uuid: string, filePath: string) {
+  const conn = connectionMap.get(uuid)
+  if (conn === undefined) {
+    dialog.showErrorBox('Run SQL Error', 'Can not Found Opened Connection')
+    return
+  }
+
+  try {
+    const fd = await open(filePath, 'r')
+    const rawSQL = await fd.readFile({ encoding: 'utf-8' })
+    const transaction = conn.transaction(() => {
+      conn.exec(rawSQL)
+    })
+    transaction()
+    fd.close()
+  } catch (error) {
+    // pass by
+    dialog.showErrorBox('Run SQL Error', (error as Error).message)
+  }
+}
+
+async function exportSql(conn: Connection) {
+  console.log('export sql', conn)
+  const win = BrowserWindow.getFocusedWindow()!
+  const { canceled, filePath } = await dialog.showSaveDialog(win, {
+    filters: [
+      {
+        extensions: ['sql'],
+        name: 'SQL '
+      }
+    ],
+    properties: ['createDirectory']
+  })
+  if (canceled || filePath === undefined) {
+    return
+  }
+  const { uuid } = conn
+  console.log(uuid, Array.from(connectionMap.keys()))
+  const target = connectionMap.get(uuid)
+  if (target === undefined) {
+    dialog.showErrorBox('Run SQL Error', 'Can not Found Opened Connection')
+    return
+  }
+  const sqlFileStream = createWriteStream(filePath)
+  try {
+    const stmt = target.prepare(
+      "SELECT * FROM sqlite_master WHERE type='table';"
+    )
+    const tables = stmt.all() as TableInfo[]
+
+    tables.map((z) => {
+      sqlFileStream.write(`-- CREATE TABLE ${z.tbl_name}\n`)
+      sqlFileStream.write(`${z.sql};\n`)
+      sqlFileStream.write(`-- CREATE TABLE ${z.tbl_name} END\n`)
+    })
+    sqlFileStream.end()
+    sqlFileStream.close()
+    const result = await dialog.showMessageBox(win, {
+      message: 'Export Done',
+      buttons: ['OK', 'Open File']
+    })
+
+    win.webContents.send(MSG_BACKEND_TYPE.DATABASE_CHANGED, uuid)
+    switch (result.response) {
+      case 0:
+        break
+      case 1:
+        shell.openPath(filePath)
+        break
+    }
+  } catch (error) {
+    dialog.showErrorBox('Run SQL Error', 'Can not Found Opened Connection')
+  }
 }

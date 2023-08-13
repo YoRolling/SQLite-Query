@@ -91,7 +91,11 @@ export const GlobalMenu: MenuItemConstructorOptions[] = [
 ]
 const itemClicked = (args: unknown) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  return (item: MenuItem, window: BrowserWindow | undefined, _event: KeyboardEvent) => {
+  return (
+    item: MenuItem,
+    window: BrowserWindow | undefined,
+    _event: KeyboardEvent
+  ) => {
     window?.webContents.send(MENU_CLICKED, { id: item.id, args })
   }
 }
@@ -139,7 +143,13 @@ function buildDatabaseContextMenu(args: unknown): MenuItemConstructorOptions[] {
           })
           .then((value) => {
             if (!value.canceled) {
-              value.filePaths
+              emitter.emit('MENU_CLIKED', {
+                action: CONTEXT_MENU.Run_SQL,
+                payload: {
+                  args,
+                  path: value.filePaths
+                }
+              })
             }
           })
       }
@@ -147,7 +157,12 @@ function buildDatabaseContextMenu(args: unknown): MenuItemConstructorOptions[] {
     {
       label: 'Export SQL',
       id: CONTEXT_MENU.Export_SQL,
-      click: itemClicked(args)
+      click: () => {
+        emitter.emit('MENU_CLIKED', {
+          action: CONTEXT_MENU.Export_SQL,
+          payload: args
+        })
+      }
     },
     {
       type: 'separator'

@@ -9,20 +9,26 @@ import {
   rem
 } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
+import useIpcMsg from '@renderer/hooks/useIpcMsg'
 import { dbList } from '@renderer/store'
 import { invokeIpc } from '@renderer/utils/ipcHelper'
 import { BUILD_CONTEXT_MENU, EXEC_SQL } from '@src/common/const'
-import { Connection, MenuType } from '@src/common/types'
+import {
+  Connection,
+  MSG_BACKEND_TYPE,
+  MenuType,
+  TableInfo
+} from '@src/common/types'
 import { IconDatabase, IconTable } from '@tabler/icons-react'
 import { useStore } from 'jotai'
-import { MouseEvent, useEffect, useState } from 'react'
+import { MouseEvent, useCallback, useEffect, useState } from 'react'
 
 export default function Sidebar() {
   const theme = useMantineTheme()
   const store = useStore()
   const [connectionList, setConnectionList] = useState<Connection[]>([])
   const [activedConn, setActiveConn] = useState<string>('')
-  const [tables, updateTables] = useState<unknown[]>([])
+  const [tables, updateTables] = useState<TableInfo[]>([])
   useEffect(() => {
     const unSub = store.sub(dbList, () => {
       const list = store.get(dbList)
@@ -37,26 +43,36 @@ export default function Sidebar() {
     }
   }, [])
 
-  useEffect(() => {
-    async function selectTables() {
-      try {
-        const { data } = await invokeIpc<{ data: unknown[] }>(EXEC_SQL, {
-          uuid: activedConn,
-          sql: `SELECT * FROM sqlite_master WHERE type='table';`
-        })
-        updateTables(data)
-      } catch (error) {
-        Notifications.show({
-          message: (error as Error).message
-        })
-      }
+  useIpcMsg(MSG_BACKEND_TYPE.DATABASE_CHANGED, (msg) => {
+    const uuid = msg as string
+    if (uuid === activedConn) {
+      selectTables(uuid)
     }
+  })
+
+  const selectTables = useCallback(async (uuid: string) => {
+    try {
+      const { data } = await invokeIpc<{ data: TableInfo[] }>(EXEC_SQL, {
+        uuid,
+        sql: `SELECT * FROM sqlite_master WHERE type='table';`
+      })
+      updateTables(data)
+    } catch (error) {
+      Notifications.show({
+        message: (error as Error).message
+      })
+    }
+  }, [])
+  useEffect(() => {
     if (activedConn !== '') {
-      selectTables()
+      selectTables(activedConn)
     }
   }, [activedConn])
 
-  const onContextMenu = async (event: MouseEvent<HTMLButtonElement>, payload: unknown) => {
+  const onContextMenu = async (
+    event: MouseEvent<HTMLButtonElement>,
+    payload: unknown
+  ) => {
     event.preventDefault()
     event.stopPropagation()
     try {
@@ -114,14 +130,16 @@ export default function Sidebar() {
         sx={{
           paddingTop: theme.spacing.sm,
           borderTop: `${rem(1)} solid ${
-            theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[2]
+            theme.colorScheme === 'dark'
+              ? theme.colors.dark[4]
+              : theme.colors.gray[2]
           }`
         }}
       >
-        {(tables as [{ name: string }]).map((v, idx) => {
+        {tables.map((v) => {
           return (
             <NavLink
-              key={idx}
+              key={v.tbl_name}
               variant="filled"
               label={v.name}
               icon={<IconTable size={16} />}

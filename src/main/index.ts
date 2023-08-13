@@ -5,7 +5,9 @@ import icon from '../../resources/icon.png?asset'
 import { setupIpcHandle } from './libs/ipcHandle'
 import { GlobalMenu } from './libs/menu'
 
-import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-extension-installer'
+import installExtension, {
+  REACT_DEVELOPER_TOOLS
+} from 'electron-extension-installer'
 
 function createWindow(): void {
   // Create the browser window.
