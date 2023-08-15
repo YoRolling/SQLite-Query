@@ -3,7 +3,6 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { setupIpcHandle } from './libs/ipcHandle'
-import { GlobalMenu } from './libs/menu'
 
 import installExtension, {
   REACT_DEVELOPER_TOOLS
@@ -25,7 +24,8 @@ function createWindow(): void {
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
   })
-  Menu.setApplicationMenu(Menu.buildFromTemplate(GlobalMenu))
+  // Menu.setApplicationMenu(Menu.buildFromTemplate(GlobalMenu))
+  Menu.setApplicationMenu(null)
   setupIpcHandle(mainWindow)
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)

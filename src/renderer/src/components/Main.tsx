@@ -46,11 +46,11 @@ export default function MainTab() {
     }
   }, [tabsList])
 
-  const activeKey = useMemo(() => activeTab?.uuid, [activeTab])
+  const activeKey = useMemo(() => activeTab?.uuid, [activeTab?.uuid])
 
   const onTabChange = async (value: TabsValue) => {
-    await queryTabRef.current?.syncEditorState()
-    await invokeIpc(TAB_CHANGED, value)
+    const query = await queryTabRef.current?.syncEditorState()
+    await invokeIpc(TAB_CHANGED, { uuid: value, query: query })
   }
   if (tabsList.length === 0) {
     return <></>

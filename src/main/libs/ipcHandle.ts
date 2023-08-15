@@ -11,7 +11,7 @@ import {
   TAB_CHANGED
 } from '../../common/const'
 import { v4 as uuid4 } from 'uuid'
-import Database from 'better-sqlite3'
+import Database, { Statement } from 'better-sqlite3'
 import { Subject } from 'rxjs'
 import { filter } from 'rxjs/operators'
 import {
@@ -53,8 +53,9 @@ const connectionSubject: Subject<{
   id: string
   connection?: Connection
 }> = new Subject()
-
+let win: BrowserWindow | null = null
 export function setupIpcHandle(window: BrowserWindow) {
+  win = window
   window.webContents.on('did-finish-load', () => {
     window.webContents.send(CONNECTION_CHANGED, connectionList)
     window.webContents.send(TAB_CHANGED, tabs)
@@ -118,9 +119,17 @@ export function setupIpcHandle(window: BrowserWindow) {
           connectionMap.set(id, payload!)
           if (connectionList.find((v) => v.uuid === id) === undefined) {
             connectionList.push(connection!)
+          } else {
+            connectionList = connectionList.map((v) => {
+              if (v.uuid === id) {
+                return { ...v, ...connection }
+              } else {
+                return v
+              }
+            })
           }
           break
-        case ActionType.Remove:
+        case ActionType.Close:
           connectionMap.delete(id)
           connectionList = connectionList.map((v) => {
             if (v.uuid === id) {
@@ -131,11 +140,26 @@ export function setupIpcHandle(window: BrowserWindow) {
           })
           break
         case ActionType.Patch:
+          connectionMap.set(id, payload!)
+          connectionList = connectionList.map((v) => {
+            if (v.uuid === id) {
+              return { ...v, ...connection }
+            } else {
+              return v
+            }
+          })
+
           break
         case ActionType.Initial:
           break
+        case ActionType.Remove:
+          connectionMap.delete(id)
+          connectionList = connectionList.filter((v) => {
+            return v.uuid !== id
+          })
+          break
       }
-
+      console.log({ type, connectionList })
       window.webContents.send(CONNECTION_CHANGED, connectionList)
     })
 
@@ -183,11 +207,11 @@ function buildConnect(options: ConnectionSetup): Connection {
  */
 function closeConnection({ uuid }: { uuid: string }) {
   try {
-    if (connectionMap.has(uuid)) {
-      const conn = connectionMap.get(uuid)
+    const conn = connectionMap.get(uuid)
+    if (conn !== undefined) {
       conn?.close()
       connectionSubject.next({
-        type: ActionType.Remove,
+        type: ActionType.Close,
         payload: conn,
         id: uuid
       })
@@ -237,7 +261,7 @@ function setupFilePicker(args: { type: ConnectionSetupType }) {
   return dialog.showOpenDialog(options as Electron.OpenDialogOptions)
 }
 
-function setupContextMenu(args: { type: MenuType; payload: unknown }) {
+function setupContextMenu(args: { type: MenuType; payload: never }) {
   const menu = Menu.buildFromTemplate(buildContextMenu(args))
   menu.popup()
 }
@@ -250,7 +274,14 @@ function handleSqlExec(payload: QueryArgs): IpcResult<Result> {
       error: new Error('The database is not open, an error may occur ', {})
     }
   }
-  const stmt = connection.prepare(sql)
+  let stmt: Statement
+  try {
+    stmt = connection.prepare(sql)
+  } catch (error) {
+    return {
+      error: new Error('Something crashed', {})
+    }
+  }
   try {
     const data = stmt.all()
     const columns = stmt.columns()
@@ -262,35 +293,68 @@ function handleSqlExec(payload: QueryArgs): IpcResult<Result> {
 }
 
 function handleInnerEmit() {
+  const handler: Record<CONTEXT_MENU, (args: never) => void> = {
+    [CONTEXT_MENU.Close_Conn]: closeConnection,
+    [CONTEXT_MENU.Create_Query]: createQueryTab,
+    [CONTEXT_MENU.Export_SQL]: exportSql,
+    [CONTEXT_MENU.Run_SQL]: runSQL,
+    [CONTEXT_MENU.Drop_Table]: dropTable,
+    [CONTEXT_MENU.Design_Table]: function (): void {
+      throw new Error('Function not implemented.')
+    },
+    [CONTEXT_MENU.Open_Database]: openConnection,
+    [CONTEXT_MENU.Delete_Database]: deleteConnection
+  }
   emitter.on('MENU_CLIKED', (args) => {
     const { action, payload } = args
-    switch (action) {
-      case CONTEXT_MENU.Create_Query:
-        tabsSubject.next({
-          type: ActionType.Add,
-          payload: {
-            label: 'Query',
-            uuid: uuid4(),
-            subLabel: '',
-            relateConn: (payload as Connection).uuid,
-            query: '',
-            active: true
-          }
-        })
-        break
-      case CONTEXT_MENU.Close_Conn:
-        closeConnection(payload as Connection)
-        break
-      case CONTEXT_MENU.Run_SQL:
-        // eslint-disable-next-line no-case-declarations
-        const {
-          path,
-          args: { uuid }
-        } = payload as { path: string[]; args: Connection }
-        runSQL(uuid, path[0])
-        break
-      case CONTEXT_MENU.Export_SQL:
-        exportSql(payload as Connection)
+    handler[action](payload as never)
+  })
+}
+
+async function dropTable(args: TableInfo) {
+  const { tbl_name } = args
+  const buttons = ['Yes,Drop it', 'No, just take me away']
+  const controller = new AbortController()
+  const signal = controller.signal
+
+  const { response } = await dialog.showMessageBox(win!, {
+    message: 'Confirm to Drop Table ' + tbl_name,
+    buttons,
+    signal
+  })
+  if (response === 0) {
+    // TODO  drop table
+  }
+  controller.abort()
+}
+
+function openConnection(options: Connection): void {
+  const { path, uuid } = options
+  const db = new Database(path, {
+    timeout: 5e3,
+    readonly: false
+  })
+  const connection = { ...options, opened: true }
+
+  connectionSubject.next({
+    type: ActionType.Add,
+    payload: db,
+    id: uuid,
+    connection: connection
+  })
+}
+
+function createQueryTab(payload: unknown) {
+  tabs = tabs.map((v) => ({ ...v, active: false }))
+  tabsSubject.next({
+    type: ActionType.Add,
+    payload: {
+      label: 'Query',
+      uuid: uuid4(),
+      subLabel: '',
+      relateConn: (payload as Connection).uuid,
+      query: '',
+      active: true
     }
   })
 }
@@ -302,17 +366,26 @@ function closeTab(tab: Tab) {
   })
 }
 
-function tabsChange(value: string) {
+function tabsChange(payload: { uuid: string; query: string }) {
   tabs = tabs.map((v) => {
     return { ...v, active: false }
   })
   tabsSubject.next({
     type: ActionType.Patch,
-    payload: { active: true, uuid: value } as Tab
+    payload: { ...payload, active: true } as Tab
   })
 }
 
-async function runSQL(uuid: string, filePath: string) {
+async function runSQL(payload: Connection) {
+  const { uuid } = payload
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    filters: [{ name: 'SQL', extensions: ['sql'] }],
+    properties: ['openFile']
+  })
+  if (canceled === true) {
+    return
+  }
+
   const conn = connectionMap.get(uuid)
   if (conn === undefined) {
     dialog.showErrorBox('Run SQL Error', 'Can not Found Opened Connection')
@@ -320,13 +393,18 @@ async function runSQL(uuid: string, filePath: string) {
   }
 
   try {
-    const fd = await open(filePath, 'r')
+    const fd = await open(filePaths[0], 'r')
     const rawSQL = await fd.readFile({ encoding: 'utf-8' })
     const transaction = conn.transaction(() => {
       conn.exec(rawSQL)
     })
     transaction()
     fd.close()
+    dialog.showMessageBox(win!, {
+      message: 'Success',
+      detail: 'SQL has been executed successfully'
+    })
+    win?.webContents.send(MSG_BACKEND_TYPE.DATABASE_CHANGED, uuid)
   } catch (error) {
     // pass by
     dialog.showErrorBox('Run SQL Error', (error as Error).message)
@@ -385,4 +463,18 @@ async function exportSql(conn: Connection) {
   } catch (error) {
     dialog.showErrorBox('Run SQL Error', 'Can not Found Opened Connection')
   }
+}
+
+/**
+ * Delete the Special Connection
+ * @author YoRolling
+ * @param {Connection} params
+ */
+async function deleteConnection(params: Connection) {
+  const { uuid } = params
+  connectionSubject.next({
+    type: ActionType.Remove,
+    connection: params,
+    id: uuid
+  })
 }

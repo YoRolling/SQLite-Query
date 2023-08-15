@@ -6,7 +6,8 @@ import {
   ScrollArea,
   Text,
   useMantineTheme,
-  rem
+  rem,
+  NavLinkProps
 } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import useIpcMsg from '@renderer/hooks/useIpcMsg'
@@ -36,6 +37,7 @@ export default function Sidebar() {
       if (list[len - 1] !== undefined) {
         setActiveConn(list[len - 1].uuid)
       }
+      console.log(list)
       setConnectionList(list)
     })
     return () => {
@@ -71,13 +73,14 @@ export default function Sidebar() {
 
   const onContextMenu = async (
     event: MouseEvent<HTMLButtonElement>,
-    payload: unknown
+    payload: Connection | TableInfo,
+    type: MenuType = MenuType.CONTEXT_DB
   ) => {
     event.preventDefault()
     event.stopPropagation()
     try {
       await invokeIpc(BUILD_CONTEXT_MENU, {
-        type: MenuType.CONTEXT_DB,
+        type: type,
         payload
       })
     } catch (error) {
@@ -111,12 +114,15 @@ export default function Sidebar() {
       </Navbar.Section>
       <Navbar.Section grow component={ScrollArea}>
         {connectionList.map((v) => {
+          const props: NavLinkProps = {}
+          if (v.opened) {
+            props.active = true
+          }
           return (
             <NavLink
               key={v.uuid}
-              variant="filled"
               label={v.label}
-              active={v.opened}
+              {...props}
               icon={<IconDatabase size={16} />}
               onContextMenu={(event) => onContextMenu(event, v)}
               onClick={() => setActiveConn(v.uuid)}

@@ -18,6 +18,8 @@ export enum CONTEXT_MENU {
   Export_SQL = '10002',
   Run_SQL = '10003',
   Drop_Table = '10004',
-  Design_Table = '10005'
+  Design_Table = '10005',
+  Open_Database = '10006',
+  Delete_Database = '10007'
 }
 export const MSG_BACKEND = 'MSG_BACKEND'

@@ -1,4 +1,9 @@
-import { AppShell, ColorScheme, ColorSchemeProvider, MantineProvider } from '@mantine/core'
+import {
+  AppShell,
+  ColorScheme,
+  ColorSchemeProvider,
+  MantineProvider
+} from '@mantine/core'
 import { useColorScheme } from '@mantine/hooks'
 import { Notifications } from '@mantine/notifications'
 import Aside from '@renderer/components/Aside'
@@ -13,7 +18,8 @@ import { ModalsProvider } from '@mantine/modals'
 
 function App(): JSX.Element {
   const preferredColorScheme = useColorScheme()
-  const [colorScheme, setColorScheme] = useState<ColorScheme>(preferredColorScheme)
+  const [colorScheme, setColorScheme] =
+    useState<ColorScheme>(preferredColorScheme)
   const toggleColorScheme = (value?: ColorScheme) =>
     setColorScheme(value || (colorScheme === 'dark' ? 'light' : 'dark'))
   const [connectionList] = useConnection()
@@ -21,7 +27,10 @@ function App(): JSX.Element {
     store.set(dbList, connectionList)
   }, [JSON.stringify(connectionList)])
   return (
-    <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
+    <ColorSchemeProvider
+      colorScheme={colorScheme}
+      toggleColorScheme={toggleColorScheme}
+    >
       <MantineProvider withGlobalStyles withNormalizeCSS>
         <Provider store={store}>
           <ModalsProvider>

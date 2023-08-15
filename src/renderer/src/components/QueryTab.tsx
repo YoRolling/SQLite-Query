@@ -3,7 +3,7 @@ import { useElementSize } from '@mantine/hooks'
 import { tabState } from '@renderer/store'
 import { invokeIpc } from '@renderer/utils/ipcHelper'
 import { EXEC_SQL } from '@src/common/const'
-import { Tab } from '@src/common/types'
+import { Result, Tab } from '@src/common/types'
 import MonacoEditor, {
   IMonacoEditor,
   RefEditorInstance
@@ -18,6 +18,7 @@ import {
   useRef
 } from 'react'
 import QueryResult from './QueryResult'
+import { notifications } from '@mantine/notifications'
 
 const TabComponent = styled.div`
   display: flex;
@@ -29,7 +30,7 @@ const TabComponent = styled.div`
   }
 `
 export type QueryTabInstance = {
-  syncEditorState: () => Promise<void>
+  syncEditorState: () => Promise<string>
 }
 function QueryTab(
   { tab }: { tab: Tab },
@@ -38,8 +39,7 @@ function QueryTab(
   const { ref: element, width, height } = useElementSize()
   const editor = useRef<RefEditorInstance | null>(null)
   const { uuid } = tab
-  const currentTabAtom = tabState(uuid)
-  const [tab_state, update] = useAtom(currentTabAtom)
+  const [tab_state, update] = useAtom(tabState({ uuid }))
 
   // fixed editor layout when container size changed
   useEffect(() => {
@@ -73,74 +73,85 @@ function QueryTab(
         syncEditorState() {
           // pass
           const value = getUserInput()
-          update((prev) => {
-            return { ...prev, query: value }
-          })
-          return Promise.resolve()
+          console.log('expose', value, tab_state.uuid)
+          update({ ...tab_state, query: value })
+          console.log('expose', value, tab_state)
+          return Promise.resolve(value)
         }
       }
     },
-    []
+    [uuid]
   )
 
   useEffect(() => {
+    console.log(tab_state)
     editor.current?.editor?.setValue(tab_state.query)
-  }, [tab])
+    return () => {
+      const value = getUserInput()
+      console.log('tab changed', value, tab_state.uuid)
+      update({ ...tab_state, query: value })
+    }
+  }, [uuid])
 
-  const onMount = (
-    editor: editor.IStandaloneCodeEditor,
-    monaco: IMonacoEditor
-  ) => {
-    // editor.focus()
-    editor.addAction({
-      id: 'com.yorolling.query',
-      // A label of the action that will be presented to the user.
-      label: 'Run Query',
-      // An optional array of keybindings for the action.
-      keybindings: [
-        monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10,
-        // chord
-        monaco.KeyMod.chord(
-          monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
-          monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyM
-        )
-      ],
-      contextMenuGroupId: 'navigation',
-      contextMenuOrder: 1.5,
-      // Method that will be executed when the action is triggered.
-      // @param editor The editor instance is passed in as a convenience
-      run: async function () {
-        const value = getUserInput()
-        if (value) {
-          const result = await invokeIpc(EXEC_SQL, {
-            sql: value,
-            uuid: tab.relateConn
-          })
-          update((prev) => {
-            return { ...prev, result }
-          })
+  const onMount = useCallback(
+    (editor: editor.IStandaloneCodeEditor, monaco: IMonacoEditor) => {
+      // editor.focus()
+      editor.addAction({
+        id: 'com.yorolling.query',
+        // A label of the action that will be presented to the user.
+        label: 'Run Query',
+        // An optional array of keybindings for the action.
+        keybindings: [
+          monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10,
+          // chord
+          monaco.KeyMod.chord(
+            monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
+            monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyM
+          )
+        ],
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.5,
+        // Method that will be executed when the action is triggered.
+        // @param editor The editor instance is passed in as a convenience
+        run: async function () {
+          const value = getUserInput()
+          if (value) {
+            try {
+              const result = await invokeIpc<Result>(EXEC_SQL, {
+                sql: value,
+                uuid: tab.relateConn
+              })
+
+              update({ ...tab_state, result })
+            } catch (error) {
+              notifications.show({
+                title: 'Error',
+                message: 'Hey there,Error caughted! 🤥,' + error,
+                color: 'red'
+              })
+            }
+          }
         }
-      }
-    })
-    editor.addAction({
-      id: 'com.yorolling.querySelection',
-      label: 'Run Selection Query',
-      contextMenuGroupId: 'navigation',
-      contextMenuOrder: 1.6,
-      run: async function () {
-        const value = getUserInput(2)
-        if (value) {
-          const result = await invokeIpc(EXEC_SQL, {
-            sql: value,
-            uuid: tab.relateConn
-          })
-          update((prev) => {
-            return { ...prev, result }
-          })
+      })
+      editor.addAction({
+        id: 'com.yorolling.querySelection',
+        label: 'Run Selection Query',
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.6,
+        run: async function () {
+          const value = getUserInput(2)
+          if (value) {
+            const result = await invokeIpc(EXEC_SQL, {
+              sql: value,
+              uuid: tab.relateConn
+            })
+            update({ ...tab_state, result })
+          }
         }
-      }
-    })
-  }
+      })
+    },
+    [editor]
+  )
 
   return (
     <TabComponent>

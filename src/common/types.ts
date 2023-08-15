@@ -29,7 +29,8 @@ export enum ActionType {
   Remove,
   Patch,
   Initial,
-  RemoveAll
+  RemoveAll,
+  Close
 }
 export enum MenuType {
   CONTEXT_DB,

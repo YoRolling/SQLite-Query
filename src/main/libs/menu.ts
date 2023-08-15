@@ -1,13 +1,12 @@
 import {
   app,
   BrowserWindow,
-  dialog,
   KeyboardEvent,
   MenuItem,
   MenuItemConstructorOptions
 } from 'electron'
 import { CONTEXT_MENU, MENU_CLICKED } from '../../common/const'
-import { MenuType } from '../../common/types'
+import { Connection, MenuType, TableInfo } from '../../common/types'
 import { emitter } from './eventbus'
 
 export const GlobalMenu: MenuItemConstructorOptions[] = [
@@ -17,7 +16,7 @@ export const GlobalMenu: MenuItemConstructorOptions[] = [
       {
         label: 'Create Database',
         accelerator: 'CmdOrCtrl+N',
-        click: (_item, _window, _event) => {
+        click: () => {
           // 处理新建菜单项的点击事件
           // window?.webContents.send()
         }
@@ -94,15 +93,24 @@ const itemClicked = (args: unknown) => {
   return (
     item: MenuItem,
     window: BrowserWindow | undefined,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _event: KeyboardEvent
   ) => {
     window?.webContents.send(MENU_CLICKED, { id: item.id, args })
   }
 }
-export function buildContextMenu(args: {
-  type: MenuType
-  payload: unknown
-}): MenuItemConstructorOptions[] {
+export function buildContextMenu(
+  args:
+    | {
+        type: MenuType.CONTEXT_DB
+        payload: Connection
+      }
+    | { type: MenuType.CONTEXT_TABLE; payload: TableInfo }
+    | {
+        type: Exclude<MenuType, MenuType.CONTEXT_DB | MenuType.CONTEXT_TABLE>
+        payload: unknown
+      }
+): MenuItemConstructorOptions[] {
   const { type, payload } = args
   let result: MenuItemConstructorOptions[] = []
   switch (type) {
@@ -120,7 +128,33 @@ export function buildContextMenu(args: {
   return result
 }
 
-function buildDatabaseContextMenu(args: unknown): MenuItemConstructorOptions[] {
+function buildDatabaseContextMenu(
+  args: Connection
+): MenuItemConstructorOptions[] {
+  if (args.opened === false) {
+    return [
+      {
+        label: 'Open Database',
+        id: CONTEXT_MENU.Open_Database,
+        click: () => {
+          emitter.emit('MENU_CLIKED', {
+            action: CONTEXT_MENU.Open_Database,
+            payload: args
+          })
+        }
+      },
+      {
+        label: 'Delete Connection',
+        id: CONTEXT_MENU.Delete_Database,
+        click: () => {
+          emitter.emit('MENU_CLIKED', {
+            action: CONTEXT_MENU.Delete_Database,
+            payload: args
+          })
+        }
+      }
+    ]
+  }
   return [
     {
       label: 'Create Query',
@@ -136,22 +170,10 @@ function buildDatabaseContextMenu(args: unknown): MenuItemConstructorOptions[] {
       label: 'Run SQL',
       id: CONTEXT_MENU.Run_SQL,
       click: () => {
-        dialog
-          .showOpenDialog({
-            filters: [{ name: 'SQL', extensions: ['sql'] }],
-            properties: ['openFile']
-          })
-          .then((value) => {
-            if (!value.canceled) {
-              emitter.emit('MENU_CLIKED', {
-                action: CONTEXT_MENU.Run_SQL,
-                payload: {
-                  args,
-                  path: value.filePaths
-                }
-              })
-            }
-          })
+        emitter.emit('MENU_CLIKED', {
+          action: CONTEXT_MENU.Run_SQL,
+          payload: args
+        })
       }
     },
     {
@@ -170,12 +192,27 @@ function buildDatabaseContextMenu(args: unknown): MenuItemConstructorOptions[] {
     {
       label: 'Close Database',
       id: CONTEXT_MENU.Close_Conn,
-      click: itemClicked(args)
+      click: () => {
+        emitter.emit('MENU_CLIKED', {
+          action: CONTEXT_MENU.Close_Conn,
+          payload: args
+        })
+      }
+    },
+    {
+      label: 'Delete Connection',
+      id: CONTEXT_MENU.Delete_Database,
+      click: () => {
+        emitter.emit('MENU_CLIKED', {
+          action: CONTEXT_MENU.Delete_Database,
+          payload: args
+        })
+      }
     }
   ]
 }
 
-function buildTableContextMenu(args: unknown): MenuItemConstructorOptions[] {
+function buildTableContextMenu(args: TableInfo): MenuItemConstructorOptions[] {
   return [
     {
       label: 'Create Query',
