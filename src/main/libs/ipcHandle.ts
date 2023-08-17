@@ -1,15 +1,5 @@
 import { BrowserWindow, Menu, dialog, ipcMain, shell } from 'electron'
-import {
-  BUILD_CONTEXT_MENU,
-  CLOSE_TAB,
-  CONNECTION_CHANGED,
-  CONN_CLOSE,
-  CONTEXT_MENU,
-  EXEC_SQL,
-  PICK_UP_FILE,
-  SETUP_SQLITE_CONNNECTION,
-  TAB_CHANGED
-} from '../../common/const'
+
 import { v4 as uuid4 } from 'uuid'
 import Database, { Statement } from 'better-sqlite3'
 import { Subject } from 'rxjs'
@@ -19,6 +9,7 @@ import {
   Connection,
   ConnectionSetup,
   ConnectionSetupType,
+  IPCMessage,
   IpcResult,
   MSG_BACKEND_TYPE,
   MenuType,
@@ -31,6 +22,7 @@ import { buildContextMenu } from './menu'
 import { emitter } from './eventbus'
 import { open } from 'fs/promises'
 import { createWriteStream } from 'fs'
+import { CONTEXT_MENU } from '../../common/const'
 /**
  * Connection Map
  */
@@ -54,11 +46,18 @@ const connectionSubject: Subject<{
   connection?: Connection
 }> = new Subject()
 let win: BrowserWindow | null = null
+
+function send(
+  channel: Extract<IPCMessage, 'CONNECTION_CHANGED' | 'TAB_CHANGED'>,
+  payload: unknown
+) {
+  win!.webContents.send(channel, payload)
+}
 export function setupIpcHandle(window: BrowserWindow) {
   win = window
   window.webContents.on('did-finish-load', () => {
-    window.webContents.send(CONNECTION_CHANGED, connectionList)
-    window.webContents.send(TAB_CHANGED, tabs)
+    send('CONNECTION_CHANGED', connectionList)
+    send('TAB_CHANGED', tabs)
   })
   tabsSubject
     .pipe(
@@ -99,7 +98,7 @@ export function setupIpcHandle(window: BrowserWindow) {
           tabs = tabs.filter((v) => v.relateConn !== (tab as string))
           break
       }
-      window.webContents.send(TAB_CHANGED, tabs)
+      send('TAB_CHANGED', tabs)
     })
 
   connectionSubject
@@ -159,21 +158,20 @@ export function setupIpcHandle(window: BrowserWindow) {
           })
           break
       }
-      console.log({ type, connectionList })
-      window.webContents.send(CONNECTION_CHANGED, connectionList)
+      send('CONNECTION_CHANGED', connectionList)
     })
 
   restoreStatus()
   handleInnerEmit()
-  register(SETUP_SQLITE_CONNNECTION, buildConnect)
-  register(CONN_CLOSE, closeConnection)
-  register(PICK_UP_FILE, setupFilePicker)
-  register(BUILD_CONTEXT_MENU, setupContextMenu)
-  register(EXEC_SQL, handleSqlExec)
-  register(CLOSE_TAB, closeTab)
-  register(TAB_CHANGED, tabsChange)
+  register('SETUP_SQLITE_CONNNECTION', buildConnect)
+  register('CONN_CLOSE', closeConnection)
+  register('PICK_UP_FILE', setupFilePicker)
+  register('BUILD_CONTEXT_MENU', setupContextMenu)
+  register('EXEC_SQL', handleSqlExec)
+  register('CLOSE_TAB', closeTab)
+  register('TAB_CHANGED', tabsChange)
 }
-function register<T>(channel, handle: (args: T) => unknown) {
+function register<T>(channel: IPCMessage, handle: (args: T) => unknown) {
   ipcMain.handle(channel, (_event, args: T) => {
     return handle(args)
   })
@@ -412,7 +410,6 @@ async function runSQL(payload: Connection) {
 }
 
 async function exportSql(conn: Connection) {
-  console.log('export sql', conn)
   const win = BrowserWindow.getFocusedWindow()!
   const { canceled, filePath } = await dialog.showSaveDialog(win, {
     filters: [
@@ -427,7 +424,6 @@ async function exportSql(conn: Connection) {
     return
   }
   const { uuid } = conn
-  console.log(uuid, Array.from(connectionMap.keys()))
   const target = connectionMap.get(uuid)
   if (target === undefined) {
     dialog.showErrorBox('Run SQL Error', 'Can not Found Opened Connection')

@@ -1,4 +1,3 @@
-import { TAB_CHANGED } from '@src/common/const'
 import { Tab } from '@src/common/types'
 import { useSyncExternalStore } from 'react'
 const { ipcRenderer } = window.electron
@@ -9,7 +8,7 @@ export default function useTabs() {
 }
 
 function subscribe(callback) {
-  const off = ipcRenderer.on(TAB_CHANGED, (_event, args) => {
+  const off = ipcRenderer.on('TAB_CHANGED', (_event, args) => {
     tabs = args
     callback()
   })

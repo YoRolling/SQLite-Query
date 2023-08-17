@@ -2,7 +2,6 @@ import { Tabs, TabsValue, Text } from '@mantine/core'
 import { modals } from '@mantine/modals'
 import { useTabs } from '@renderer/hooks'
 import { invokeIpc } from '@renderer/utils/ipcHelper'
-import { CLOSE_TAB, TAB_CHANGED } from '@src/common/const'
 import { Tab } from '@src/common/types'
 import { IconSql, IconX } from '@tabler/icons-react'
 import { useCallback, useMemo, useRef } from 'react'
@@ -28,7 +27,7 @@ export default function MainTab() {
       onCancel: () => console.log('Cancel'),
       onConfirm: async () => {
         try {
-          await invokeIpc<{ flag: boolean }>(CLOSE_TAB, tab)
+          await invokeIpc<{ flag: boolean }>('CLOSE_TAB', tab)
         } catch (error) {
           //
         } finally {
@@ -50,7 +49,7 @@ export default function MainTab() {
 
   const onTabChange = async (value: TabsValue) => {
     const query = await queryTabRef.current?.syncEditorState()
-    await invokeIpc(TAB_CHANGED, { uuid: value, query: query })
+    await invokeIpc('TAB_CHANGED', { uuid: value, query: query })
   }
   if (tabsList.length === 0) {
     return <></>

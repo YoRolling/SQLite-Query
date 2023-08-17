@@ -7,12 +7,7 @@ import {
   Button
 } from '@mantine/core'
 import { Form, isNotEmpty, useForm } from '@mantine/form'
-import {
-  CONTEXT_MENU,
-  MENU_CLICKED,
-  PICK_UP_FILE,
-  SETUP_SQLITE_CONNNECTION
-} from '@src/common/const'
+import { CONTEXT_MENU } from '@src/common/const'
 import {
   ConnectionSetup,
   ConnectionSetupType,
@@ -58,7 +53,7 @@ export default function Handler() {
 
   useEffect(() => {
     const off = ipcRenderer.on(
-      MENU_CLICKED,
+      'MENU_CLICKED',
       (_event, { id, payload }: { id: string; payload: unknown }) => {
         switch (id) {
           case CONTEXT_MENU.Create_Query:
@@ -76,7 +71,7 @@ export default function Handler() {
 
   const pickUpFile = async () => {
     try {
-      const result = await invokeIpc<DialogRetureValue>(PICK_UP_FILE, {
+      const result = await invokeIpc<DialogRetureValue>('PICK_UP_FILE', {
         type: form.getInputProps('type').value
       })
       const { canceled } = result
@@ -106,7 +101,7 @@ export default function Handler() {
   }
   const setupConnection = async () => {
     try {
-      await invokeIpc(SETUP_SQLITE_CONNNECTION, form.values)
+      await invokeIpc('SETUP_SQLITE_CONNNECTION', form.values)
     } catch (error) {
       // pass by
     } finally {

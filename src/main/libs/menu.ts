@@ -5,7 +5,7 @@ import {
   MenuItem,
   MenuItemConstructorOptions
 } from 'electron'
-import { CONTEXT_MENU, MENU_CLICKED } from '../../common/const'
+import { CONTEXT_MENU } from '../../common/const'
 import { Connection, MenuType, TableInfo } from '../../common/types'
 import { emitter } from './eventbus'
 
@@ -96,7 +96,7 @@ const itemClicked = (args: unknown) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _event: KeyboardEvent
   ) => {
-    window?.webContents.send(MENU_CLICKED, { id: item.id, args })
+    window?.webContents.send('MENU_CLICKED', { id: item.id, args })
   }
 }
 export function buildContextMenu(

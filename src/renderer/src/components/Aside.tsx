@@ -10,6 +10,7 @@ import {
   NavLinkProps
 } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
+import { emitter } from '@renderer/eventbus'
 import useIpcMsg from '@renderer/hooks/useIpcMsg'
 import { dbList } from '@renderer/store'
 import { invokeIpc } from '@renderer/utils/ipcHelper'
@@ -59,7 +60,7 @@ export default function Sidebar() {
 
   const selectTables = useCallback(async (uuid: string) => {
     try {
-      const { data } = await invokeIpc<{ data: TableInfo[] }>(EXEC_SQL, {
+      const { data } = await invokeIpc<{ data: TableInfo[] }>('EXEC_SQL', {
         uuid,
         sql: `SELECT * FROM sqlite_master WHERE type='table';`
       })
@@ -77,23 +78,25 @@ export default function Sidebar() {
     }
   }, [activedConn])
 
-  const onContextMenu = async (
-    event: MouseEvent<HTMLButtonElement>,
-    payload: Connection | TableInfo,
-    type: MenuType = MenuType.CONTEXT_DB
-  ) => {
-    event.preventDefault()
-    event.stopPropagation()
-    try {
-      await invokeIpc(BUILD_CONTEXT_MENU, {
-        type: type,
-        payload
-      })
-    } catch (error) {
-      console.error('BUILD_CONTEXT_MENU Error:', error)
-    }
-  }
-
+  const onContextMenu = useCallback(
+    async (
+      event: MouseEvent<HTMLButtonElement>,
+      payload: Connection | TableInfo,
+      type: MenuType = MenuType.CONTEXT_DB
+    ) => {
+      event.preventDefault()
+      event.stopPropagation()
+      try {
+        await invokeIpc('BUILD_CONTEXT_MENU', {
+          type: type,
+          payload
+        })
+      } catch (error) {
+        // pass by
+      }
+    },
+    []
+  )
   return (
     <Navbar width={{ base: 300 }} withBorder>
       <Navbar.Section>

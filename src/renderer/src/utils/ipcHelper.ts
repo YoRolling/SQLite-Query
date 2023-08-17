@@ -1,4 +1,4 @@
-import { IpcResult } from '@src/common/types'
+import { IPCMessage, IpcResult } from '@src/common/types'
 
 const { invoke } = window.electron.ipcRenderer
 function unwrap<T extends object>(result: IpcResult<T>) {
@@ -12,7 +12,7 @@ function unwrap<T extends object>(result: IpcResult<T>) {
 }
 
 export async function invokeIpc<T extends object>(
-  channel: string,
+  channel: IPCMessage,
   args: unknown
 ) {
   const result: IpcResult<T> = await invoke(channel, args)

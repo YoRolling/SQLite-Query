@@ -2,7 +2,6 @@ import styled from '@emotion/styled'
 import { useElementSize } from '@mantine/hooks'
 import { tabState } from '@renderer/store'
 import { invokeIpc } from '@renderer/utils/ipcHelper'
-import { EXEC_SQL } from '@src/common/const'
 import { Result, Tab } from '@src/common/types'
 import MonacoEditor, {
   IMonacoEditor,
@@ -112,7 +111,7 @@ function QueryTab(
           const value = getUserInput()
           if (value) {
             try {
-              const result = await invokeIpc<Result>(EXEC_SQL, {
+              const result = await invokeIpc<Result>('EXEC_SQL', {
                 sql: value,
                 uuid: tab.relateConn
               })
@@ -137,7 +136,7 @@ function QueryTab(
           const value = getUserInput(2)
           if (value) {
             try {
-              const result = await invokeIpc<Result>(EXEC_SQL, {
+              const result = await invokeIpc<Result>('EXEC_SQL', {
                 sql: value,
                 uuid: tab.relateConn
               })

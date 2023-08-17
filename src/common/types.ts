@@ -71,3 +71,20 @@ export type TableInfo = {
 export enum MSG_BACKEND_TYPE {
   DATABASE_CHANGED = 'DATABASE_CHANGED'
 }
+export type IPCMessage =
+  | 'EXEC_SQL'
+  | 'CLOSE_TAB'
+  | 'BUILD_CONTEXT_MENU'
+  | 'MENU_CLICKED'
+  | 'PICK_UP_FILE'
+  | 'SETUP_SQLITE_CONNNECTION'
+  | 'CONNECTION_CHANGED'
+  | 'TAB_CHANGED'
+  | 'CONN_CLOSE'
+  | 'CLOSE_TAB'
+  | 'DROP_TABLE'
+  | 'RUN_SQL'
+  | 'EXPORT_SQL'
+  | 'EXEC_SQL'
+  | 'RESTART_APP'
+  | 'QUIT'
