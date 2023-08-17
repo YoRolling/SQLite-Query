@@ -1,10 +1,18 @@
 {
   "name": "sqlite-query",
   "version": "1.0.0",
-  "description": "An Electron application with React and TypeScript",
+  "description": "A Simple SQLite Query Client Base on Electron&Better-SQlite3",
   "main": "./out/main/index.js",
-  "author": "example.com",
+  "author": "YoRolling",
   "homepage": "https://www.electronjs.org",
+  "keywords": [
+    "electron",
+    "sqlite",
+    "better-sqlite3",
+    "sqlite query",
+    "SQLite Client",
+    "SQLite GUI"
+  ],
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
