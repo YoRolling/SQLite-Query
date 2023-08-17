@@ -65,6 +65,7 @@ export type TableInfo = {
   name: string
   tbl_name: string
   rootpage: number
+  conn: string
 }
 
 export enum MSG_BACKEND_TYPE {

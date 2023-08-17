@@ -71,11 +71,8 @@ function QueryTab(
     () => {
       return {
         syncEditorState() {
-          // pass
           const value = getUserInput()
-          console.log('expose', value, tab_state.uuid)
           update({ ...tab_state, query: value })
-          console.log('expose', value, tab_state)
           return Promise.resolve(value)
         }
       }
@@ -84,11 +81,9 @@ function QueryTab(
   )
 
   useEffect(() => {
-    console.log(tab_state)
     editor.current?.editor?.setValue(tab_state.query)
     return () => {
       const value = getUserInput()
-      console.log('tab changed', value, tab_state.uuid)
       update({ ...tab_state, query: value })
     }
   }, [uuid])
@@ -141,11 +136,19 @@ function QueryTab(
         run: async function () {
           const value = getUserInput(2)
           if (value) {
-            const result = await invokeIpc(EXEC_SQL, {
-              sql: value,
-              uuid: tab.relateConn
-            })
-            update({ ...tab_state, result })
+            try {
+              const result = await invokeIpc<Result>(EXEC_SQL, {
+                sql: value,
+                uuid: tab.relateConn
+              })
+              update({ ...tab_state, result })
+            } catch (error) {
+              notifications.show({
+                title: 'Error',
+                message: 'Hey there,Error caughted! 🤥,' + error,
+                color: 'red'
+              })
+            }
           }
         }
       })

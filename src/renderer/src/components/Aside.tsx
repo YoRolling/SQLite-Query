@@ -20,7 +20,12 @@ import {
   MenuType,
   TableInfo
 } from '@src/common/types'
-import { IconDatabase, IconTable } from '@tabler/icons-react'
+import {
+  IconDatabase,
+  IconPlug,
+  IconPlugX,
+  IconTable
+} from '@tabler/icons-react'
 import { useStore } from 'jotai'
 import { MouseEvent, useCallback, useEffect, useState } from 'react'
 
@@ -58,7 +63,8 @@ export default function Sidebar() {
         uuid,
         sql: `SELECT * FROM sqlite_master WHERE type='table';`
       })
-      updateTables(data)
+      const tables = data.map((v) => ({ ...v, conn: uuid }))
+      updateTables(tables)
     } catch (error) {
       Notifications.show({
         message: (error as Error).message
@@ -126,6 +132,9 @@ export default function Sidebar() {
               icon={<IconDatabase size={16} />}
               onContextMenu={(event) => onContextMenu(event, v)}
               onClick={() => setActiveConn(v.uuid)}
+              rightSection={
+                v.opened ? <IconPlug size="1rem" /> : <IconPlugX size="1rem" />
+              }
             ></NavLink>
           )
         })}

@@ -19,7 +19,7 @@ import {
   DialogRetureValue
 } from '@src/common/types'
 import { IconFileImport } from '@tabler/icons-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { v4 as UUIDV4 } from 'uuid'
 const { ipcRenderer } = window.electron
 import { emitter } from '@renderer/eventbus'
@@ -29,6 +29,9 @@ export default function Handler() {
   useEffect(() => {
     function handle(event) {
       form.setFieldValue('type', event)
+      if (event === ConnectionSetupType.Memory) {
+        form.setFieldValue('path', ':memory:')
+      }
       toggle(true)
     }
     emitter.on('FIRE_DB_LOCATE', handle)
@@ -48,6 +51,10 @@ export default function Handler() {
       path: isNotEmpty('Choose Your Databse File')
     }
   })
+
+  const type = useMemo(() => {
+    return form.getInputProps('type')
+  }, [form])
 
   useEffect(() => {
     const off = ipcRenderer.on(
@@ -90,8 +97,7 @@ export default function Handler() {
             (result as Electron.OpenDialogReturnValue).filePaths[0]
           )
           break
-        case ConnectionSetupType.Memory:
-          form.setFieldValue('path', ':memory:')
+        default:
           break
       }
     } catch (error) {
@@ -104,16 +110,18 @@ export default function Handler() {
     } catch (error) {
       // pass by
     } finally {
-      toggle(false)
+      canceled()
     }
   }
-  const canceled = () => {
-    form.reset()
+  const canceled = useCallback(() => {
     toggle(false)
-  }
+    form.reset()
+  }, [form])
 
   return (
     <Modal
+      closeOnEscape={false}
+      closeOnClickOutside={false}
       opened={opened}
       onClose={canceled}
       centered
@@ -129,19 +137,21 @@ export default function Handler() {
           {...form.getInputProps('label')}
         />
         <Space h="md" />
-        <TextInput
-          placeholder=""
-          label="Database File Location"
-          variant="filled"
-          required
-          readOnly
-          {...form.getInputProps('path')}
-          rightSection={
-            <ActionIcon color="green" onClick={pickUpFile}>
-              <IconFileImport />
-            </ActionIcon>
-          }
-        />
+        {type.value !== ConnectionSetupType.Memory && (
+          <TextInput
+            placeholder=""
+            label="Database File Location"
+            variant="filled"
+            required
+            readOnly
+            {...form.getInputProps('path')}
+            rightSection={
+              <ActionIcon color="green" onClick={pickUpFile}>
+                <IconFileImport />
+              </ActionIcon>
+            }
+          />
+        )}
 
         <Group mt="xl">
           <Button variant="outline" type="submit">
