@@ -24,8 +24,10 @@ function createWindow(): void {
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
   })
-  // Menu.setApplicationMenu(Menu.buildFromTemplate(GlobalMenu))
+  mainWindow.removeMenu()
+  mainWindow.setMenu(null)
   Menu.setApplicationMenu(null)
+  // Menu.setApplicationMenu(Menu.buildFromTemplate(GlobalMenu))
   setupIpcHandle(mainWindow)
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
@@ -40,7 +42,7 @@ function createWindow(): void {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
-
+Menu.setApplicationMenu(null)
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
