@@ -7,14 +7,15 @@ import {
   Text,
   useMantineTheme,
   rem,
-  NavLinkProps
+  NavLinkProps,
+  Menu,
+  ActionIcon
 } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { emitter } from '@renderer/eventbus'
+import { useConnection } from '@renderer/hooks'
 import useIpcMsg from '@renderer/hooks/useIpcMsg'
-import { dbList } from '@renderer/store'
 import { invokeIpc } from '@renderer/utils/ipcHelper'
-import { BUILD_CONTEXT_MENU, EXEC_SQL } from '@src/common/const'
 import {
   Connection,
   MSG_BACKEND_TYPE,
@@ -22,34 +23,29 @@ import {
   TableInfo
 } from '@src/common/types'
 import {
+  IconAdjustments,
+  IconArrowsLeftRight,
   IconDatabase,
   IconPlug,
   IconPlugX,
-  IconTable
+  IconSql,
+  IconTable,
+  IconTrash
 } from '@tabler/icons-react'
-import { useStore } from 'jotai'
 import { MouseEvent, useCallback, useEffect, useState } from 'react'
 
 export default function Sidebar() {
   const theme = useMantineTheme()
-  const store = useStore()
-  const [connectionList, setConnectionList] = useState<Connection[]>([])
+  const [connectionList] = useConnection()
   const [activedConn, setActiveConn] = useState<string>('')
   const [tables, updateTables] = useState<TableInfo[]>([])
   useEffect(() => {
-    const unSub = store.sub(dbList, () => {
-      const list = store.get(dbList)
-      const len = list.length
-      if (list[len - 1] !== undefined) {
-        setActiveConn(list[len - 1].uuid)
-      }
-      console.log(list)
-      setConnectionList(list)
-    })
-    return () => {
-      unSub()
+    const len = connectionList.length
+    if (connectionList[len - 1] !== undefined) {
+      setActiveConn(connectionList[len - 1].uuid)
     }
-  }, [])
+    return () => {}
+  }, [connectionList.length])
 
   useIpcMsg(MSG_BACKEND_TYPE.DATABASE_CHANGED, (msg) => {
     const uuid = msg as string
@@ -111,14 +107,7 @@ export default function Sidebar() {
           >
             SQLite Query
           </Text>
-          <Button
-            compact
-            variant="gradient"
-            gradient={{ from: '#ed6ea0', to: '#ec8c69', deg: 35 }}
-            leftIcon={<IconDatabase size="1rem" />}
-          >
-            New
-          </Button>
+          <ActionMenu />
         </Group>
       </Navbar.Section>
       <Navbar.Section grow component={ScrollArea}>
@@ -166,5 +155,43 @@ export default function Sidebar() {
         })}
       </Navbar.Section>
     </Navbar>
+  )
+}
+
+function ActionMenu() {
+  const fire = useCallback(() => {
+    emitter.emit('LANDING_GUIDE', true)
+  }, [])
+  const restart = useCallback(async () => {
+    await invokeIpc('RESTART_APP', { force: true })
+  }, [])
+  const quit = useCallback(async () => {
+    await invokeIpc('QUIT', {})
+  }, [])
+  return (
+    <Menu shadow="md" width={200}>
+      <Menu.Target>
+        <ActionIcon>
+          <IconAdjustments size="14" />
+        </ActionIcon>
+      </Menu.Target>
+
+      <Menu.Dropdown>
+        <Menu.Label>Connection</Menu.Label>
+        <Menu.Item icon={<IconDatabase size={14} />} onClick={fire}>
+          New Connection
+        </Menu.Item>
+        {/* <Menu.Item icon={<IconSql size={14} />}>New Query</Menu.Item> */}
+        <Menu.Divider />
+
+        <Menu.Label>Application</Menu.Label>
+        <Menu.Item icon={<IconArrowsLeftRight size={14} />} onClick={restart}>
+          Restart App
+        </Menu.Item>
+        <Menu.Item color="red" icon={<IconTrash size={14} />} onClick={quit}>
+          Quit
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
   )
 }

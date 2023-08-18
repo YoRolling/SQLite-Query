@@ -1,4 +1,4 @@
-import { BrowserWindow, Menu, dialog, ipcMain, shell } from 'electron'
+import { BrowserWindow, Menu, app, dialog, ipcMain, shell } from 'electron'
 
 import { v4 as uuid4 } from 'uuid'
 import Database, { Statement } from 'better-sqlite3'
@@ -170,6 +170,8 @@ export function setupIpcHandle(window: BrowserWindow) {
   register('EXEC_SQL', handleSqlExec)
   register('CLOSE_TAB', closeTab)
   register('TAB_CHANGED', tabsChange)
+  register('QUIT', quit)
+  register('RESTART_APP', reLaunch)
 }
 function register<T>(channel: IPCMessage, handle: (args: T) => unknown) {
   ipcMain.handle(channel, (_event, args: T) => {
@@ -473,4 +475,11 @@ async function deleteConnection(params: Connection) {
     connection: params,
     id: uuid
   })
+}
+function reLaunch() {
+  app.relaunch()
+}
+
+function quit() {
+  app.quit()
 }

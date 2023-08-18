@@ -1,20 +1,67 @@
 import { Text, Stack, Flex, Button, Space } from '@mantine/core'
 import { ConnectionSetupType } from '@src/common/types'
-import { IconFilePlus, IconDeviceDesktop, IconDatabaseEdit } from '@tabler/icons-react'
+import {
+  IconFilePlus,
+  IconDeviceDesktop,
+  IconDatabaseEdit,
+  IconX
+} from '@tabler/icons-react'
 import { emitter } from '@renderer/eventbus'
-import { useCallback } from 'react'
-const style = {
-  width: '100vw',
-  height: '100vh'
-}
+import { useCallback, useEffect, useState } from 'react'
+import { useConnection } from '@renderer/hooks'
 
 export default function LandingPage() {
+  const [visible, toggle] = useState(false)
+  const [dismiss, visiblity] = useState(false)
   const emit = useCallback((type: ConnectionSetupType) => {
     emitter.emit('FIRE_DB_LOCATE', type)
   }, [])
+  const [connectionList] = useConnection()
+  useEffect(() => {
+    if (connectionList.length === 0) {
+      toggle(true)
+    } else {
+      toggle(false)
+    }
+  }, [connectionList.length])
+
+  useEffect(() => {
+    visiblity(connectionList.length > 0)
+  }, [connectionList.length])
+  useEffect(() => {
+    function handler(visible: boolean) {
+      toggle(visible)
+    }
+    emitter.on('LANDING_GUIDE', handler)
+    return () => {
+      emitter.off('LANDING_GUIDE', handler)
+    }
+  }, [])
+
+  if (visible === false) {
+    return null
+  }
+
   return (
     <>
-      <Stack justify="center" align="center" sx={style}>
+      <Stack
+        justify="center"
+        align="center"
+        sx={(theme) => ({
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 199,
+          backgroundColor:
+            theme.colorScheme === 'dark'
+              ? theme.colors.dark[5]
+              : theme.colors.blue[0]
+        })}
+      >
         <Flex direction="column" align="center">
           <Text
             variant="gradient"
@@ -66,6 +113,16 @@ export default function LandingPage() {
             Open Memory Database
           </Button>
         </Flex>
+        {dismiss && (
+          <Button
+            variant="light"
+            color="red"
+            leftIcon={<IconX size={14} />}
+            onClick={() => toggle(false)}
+          >
+            Dismiss
+          </Button>
+        )}
       </Stack>
     </>
   )

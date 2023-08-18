@@ -101,6 +101,8 @@ export default function Handler() {
   }
   const setupConnection = async () => {
     try {
+      form.setFieldValue('uuid', UUIDV4())
+      console.log(form.values)
       await invokeIpc('SETUP_SQLITE_CONNNECTION', form.values)
     } catch (error) {
       // pass by
@@ -109,6 +111,7 @@ export default function Handler() {
     }
   }
   const canceled = useCallback(() => {
+    emitter.emit('LANDING_GUIDE', false)
     toggle(false)
     form.reset()
   }, [form])
