@@ -1,8 +1,6 @@
-import { Connection } from '@src/common/types'
-import { atom, createStore } from 'jotai'
-export const dbList = atom<Connection[]>([])
+import { createStore } from 'jotai'
 
 const store = createStore()
-store.set(dbList, [])
+
 export default store
 export * from './tabState'

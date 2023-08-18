@@ -8,24 +8,37 @@ import { useColorScheme } from '@mantine/hooks'
 import { Notifications } from '@mantine/notifications'
 import Aside from '@renderer/components/Aside'
 import LandingPage from '@renderer/components/Landing'
-import useConnection from '@renderer/hooks/useConnection'
 import { Provider } from 'jotai'
 import { useEffect, useState } from 'react'
 import Handler from './components/Handler'
-import store, { dbList } from './store'
+import store from './store'
 import MainTab from './components/Main'
 import { ModalsProvider } from '@mantine/modals'
 
 function App(): JSX.Element {
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const newColorScheme = media.matches ? 'dark' : 'light'
+    setColorScheme(newColorScheme)
+
+    const handler = (event) => {
+      const newColorScheme = event.matches ? 'dark' : 'light'
+      setColorScheme(newColorScheme)
+    }
+
+    media.addEventListener('change', handler)
+
+    return () => {
+      media.removeEventListener('change', handler)
+    }
+  }, [])
   const preferredColorScheme = useColorScheme()
   const [colorScheme, setColorScheme] =
     useState<ColorScheme>(preferredColorScheme)
+
   const toggleColorScheme = (value?: ColorScheme) =>
     setColorScheme(value || (colorScheme === 'dark' ? 'light' : 'dark'))
-  const [connectionList] = useConnection()
-  useEffect(() => {
-    store.set(dbList, connectionList)
-  }, [JSON.stringify(connectionList)])
+
   return (
     <ColorSchemeProvider
       colorScheme={colorScheme}
@@ -36,22 +49,19 @@ function App(): JSX.Element {
           <ModalsProvider>
             <Notifications />
             <Handler />
-            {connectionList.length > 0 ? (
-              <AppShell
-                aside={<Aside />}
-                layout="alt"
-                styles={{
-                  main: {
-                    paddingTop: 0,
-                    display: 'flex'
-                  }
-                }}
-              >
-                <MainTab />
-              </AppShell>
-            ) : (
-              <LandingPage />
-            )}
+            <AppShell
+              aside={<Aside />}
+              layout="alt"
+              styles={{
+                main: {
+                  paddingTop: 0,
+                  display: 'flex'
+                }
+              }}
+            >
+              <MainTab />
+            </AppShell>
+            <LandingPage />
           </ModalsProvider>
         </Provider>
       </MantineProvider>
