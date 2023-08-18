@@ -1,4 +1,4 @@
-appId: com.electron.app
+appId: com.yorolling.sqlite_query
 productName: sqlite-query
 directories:
   buildResources: build
