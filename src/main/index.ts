@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, Menu } from 'electron'
+import { app, shell, BrowserWindow, Menu, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -32,6 +32,18 @@ function createWindow(): void {
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
+  })
+
+  mainWindow.on('close', (event) => {
+    const result = dialog.showMessageBoxSync(mainWindow, {
+      message: 'Confirm to Quit?',
+      type: 'warning',
+      buttons: ['Cancle', 'Confirm'],
+      defaultId: 0
+    })
+    if (result === 0) {
+      event.preventDefault()
+    }
   })
 
   // HMR for renderer base on electron-vite cli.
