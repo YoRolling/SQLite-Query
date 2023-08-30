@@ -10,7 +10,6 @@ export default function useConnections(): [Connection[]] {
 
 function subscribe(callback) {
   const off = ipcRenderer.on('CONNECTION_CHANGED', (_event, args) => {
-    console.log({ args })
     connectionList = args
     callback()
   })
