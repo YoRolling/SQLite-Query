@@ -57,7 +57,7 @@ export default function Handler() {
       (_event, { id, payload }: { id: string; payload: unknown }) => {
         switch (id) {
           case CONTEXT_MENU.Create_Query:
-            emitter.emit('MENU_CLIKED', payload)
+            emitter.emit('MENU_CLICKED', payload)
             break
           default:
             break

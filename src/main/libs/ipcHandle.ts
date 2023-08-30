@@ -335,7 +335,7 @@ function handleInnerEmit() {
     [CONTEXT_MENU.Open_Database]: openConnection,
     [CONTEXT_MENU.Delete_Database]: deleteConnection
   }
-  emitter.on('MENU_CLIKED', (args) => {
+  emitter.on('MENU_CLICKED', (args) => {
     const { action, payload } = args
     handler[action](payload as never)
   })

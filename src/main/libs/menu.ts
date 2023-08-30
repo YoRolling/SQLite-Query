@@ -145,7 +145,7 @@ function buildDatabaseContextMenu(
         label: 'Open Database',
         id: CONTEXT_MENU.Open_Database,
         click: () => {
-          emitter.emit('MENU_CLIKED', {
+          emitter.emit('MENU_CLICKED', {
             action: CONTEXT_MENU.Open_Database,
             payload: args
           })
@@ -155,7 +155,7 @@ function buildDatabaseContextMenu(
         label: 'Delete Connection',
         id: CONTEXT_MENU.Delete_Database,
         click: () => {
-          emitter.emit('MENU_CLIKED', {
+          emitter.emit('MENU_CLICKED', {
             action: CONTEXT_MENU.Delete_Database,
             payload: args
           })
@@ -168,7 +168,7 @@ function buildDatabaseContextMenu(
       label: 'Create Query',
       id: CONTEXT_MENU.Create_Query,
       click: () => {
-        emitter.emit('MENU_CLIKED', {
+        emitter.emit('MENU_CLICKED', {
           action: CONTEXT_MENU.Create_Query,
           payload: args
         })
@@ -178,7 +178,7 @@ function buildDatabaseContextMenu(
       label: 'Run SQL',
       id: CONTEXT_MENU.Run_SQL,
       click: () => {
-        emitter.emit('MENU_CLIKED', {
+        emitter.emit('MENU_CLICKED', {
           action: CONTEXT_MENU.Run_SQL,
           payload: args
         })
@@ -188,7 +188,7 @@ function buildDatabaseContextMenu(
       label: 'Export SQL',
       id: CONTEXT_MENU.Export_SQL,
       click: () => {
-        emitter.emit('MENU_CLIKED', {
+        emitter.emit('MENU_CLICKED', {
           action: CONTEXT_MENU.Export_SQL,
           payload: args
         })
@@ -201,7 +201,7 @@ function buildDatabaseContextMenu(
       label: 'Close Database',
       id: CONTEXT_MENU.Close_Conn,
       click: () => {
-        emitter.emit('MENU_CLIKED', {
+        emitter.emit('MENU_CLICKED', {
           action: CONTEXT_MENU.Close_Conn,
           payload: args
         })
@@ -211,7 +211,7 @@ function buildDatabaseContextMenu(
       label: 'Delete Connection',
       id: CONTEXT_MENU.Delete_Database,
       click: () => {
-        emitter.emit('MENU_CLIKED', {
+        emitter.emit('MENU_CLICKED', {
           action: CONTEXT_MENU.Delete_Database,
           payload: args
         })
