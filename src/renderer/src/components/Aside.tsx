@@ -1,5 +1,4 @@
 import {
-  Button,
   Group,
   NavLink,
   Navbar,
@@ -28,7 +27,6 @@ import {
   IconDatabase,
   IconPlug,
   IconPlugX,
-  IconSql,
   IconTable,
   IconTrash
 } from '@tabler/icons-react'
@@ -93,6 +91,7 @@ export default function Sidebar() {
     },
     []
   )
+
   return (
     <Navbar width={{ base: 300 }} withBorder>
       <Navbar.Section>
@@ -112,9 +111,15 @@ export default function Sidebar() {
       </Navbar.Section>
       <Navbar.Section grow component={ScrollArea}>
         {connectionList.map((v) => {
-          const props: NavLinkProps = {}
+          const props: NavLinkProps & {
+            onClick?: React.MouseEventHandler<HTMLButtonElement> | undefined
+          } = {}
           if (v.opened) {
-            props.active = true
+            props.active = activedConn === v.uuid
+            props.onClick = () => {
+              setActiveConn(v.uuid)
+            }
+            props.color = 'blue'
           }
           return (
             <NavLink
@@ -123,7 +128,6 @@ export default function Sidebar() {
               {...props}
               icon={<IconDatabase size={16} />}
               onContextMenu={(event) => onContextMenu(event, v)}
-              onClick={() => setActiveConn(v.uuid)}
               rightSection={
                 v.opened ? <IconPlug size="1rem" /> : <IconPlugX size="1rem" />
               }
