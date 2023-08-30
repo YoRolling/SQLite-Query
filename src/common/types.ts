@@ -67,18 +67,20 @@ export type TableInfo = {
   rootpage: number
   conn: string
 }
-
+// ipc message channel from main to Renderer
 export enum MSG_BACKEND_TYPE {
-  DATABASE_CHANGED = 'DATABASE_CHANGED'
+  DATABASE_CHANGED = 'DATABASE_CHANGED',
+  MENU_CLICKED = 'MENU_CLICKED',
+  CONNECTION_CHANGED = 'CONNECTION_CHANGED',
+  TAB_CHANGED = 'TAB_CHANGED'
 }
+// type for ipc Message Channel which from renderer to main
 export type IPCMessage =
   | 'EXEC_SQL'
   | 'CLOSE_TAB'
   | 'BUILD_CONTEXT_MENU'
-  | 'MENU_CLICKED'
   | 'PICK_UP_FILE'
   | 'SETUP_SQLITE_CONNNECTION'
-  | 'CONNECTION_CHANGED'
   | 'TAB_CHANGED'
   | 'CONN_CLOSE'
   | 'CLOSE_TAB'

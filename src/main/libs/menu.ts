@@ -6,7 +6,12 @@ import {
   MenuItemConstructorOptions
 } from 'electron'
 import { CONTEXT_MENU } from '../../common/const'
-import { Connection, MenuType, TableInfo } from '../../common/types'
+import {
+  Connection,
+  MenuType,
+  MSG_BACKEND_TYPE,
+  TableInfo
+} from '../../common/types'
 import { emitter } from './eventbus'
 
 export const GlobalMenu: MenuItemConstructorOptions[] = [
@@ -96,7 +101,10 @@ const itemClicked = (args: unknown) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _event: KeyboardEvent
   ) => {
-    window?.webContents.send('MENU_CLICKED', { id: item.id, args })
+    window?.webContents.send(MSG_BACKEND_TYPE.MENU_CLICKED, {
+      id: item.id,
+      args
+    })
   }
 }
 export function buildContextMenu(

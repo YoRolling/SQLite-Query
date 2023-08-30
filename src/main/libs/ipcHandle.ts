@@ -51,18 +51,15 @@ let win: BrowserWindow | null = null
 const exePath = app.getPath('exe')
 const dataDir = path.resolve(exePath, '..', 'data')
 const filePath = path.resolve(dataDir, 'data.yaml')
-function send(
-  channel: Extract<IPCMessage, 'CONNECTION_CHANGED' | 'TAB_CHANGED'>,
-  payload: unknown
-) {
+function send(channel: MSG_BACKEND_TYPE, payload: unknown) {
   win!.webContents.send(channel, payload)
 }
 export function setupIpcHandle(window: BrowserWindow) {
   createDataDirWhenNotExist()
   win = window
   window.webContents.on('did-finish-load', () => {
-    send('CONNECTION_CHANGED', connectionList)
-    send('TAB_CHANGED', tabs)
+    send(MSG_BACKEND_TYPE.CONNECTION_CHANGED, connectionList)
+    send(MSG_BACKEND_TYPE.TAB_CHANGED, tabs)
   })
   tabsSubject
     .pipe(
@@ -103,7 +100,7 @@ export function setupIpcHandle(window: BrowserWindow) {
           tabs = tabs.filter((v) => v.relateConn !== (tab as string))
           break
       }
-      send('TAB_CHANGED', tabs)
+      send(MSG_BACKEND_TYPE.TAB_CHANGED, tabs)
     })
 
   connectionSubject
@@ -168,7 +165,7 @@ export function setupIpcHandle(window: BrowserWindow) {
       } catch (error) {
         // pass by
       }
-      send('CONNECTION_CHANGED', connectionList)
+      send(MSG_BACKEND_TYPE.CONNECTION_CHANGED, connectionList)
     })
 
   restoreStatus()

@@ -1,4 +1,4 @@
-import { Connection } from '@src/common/types'
+import { Connection, MSG_BACKEND_TYPE } from '@src/common/types'
 import { useSyncExternalStore } from 'react'
 const { ipcRenderer } = window.electron
 
@@ -9,10 +9,13 @@ export default function useConnections(): [Connection[]] {
 }
 
 function subscribe(callback) {
-  const off = ipcRenderer.on('CONNECTION_CHANGED', (_event, args) => {
-    connectionList = args
-    callback()
-  })
+  const off = ipcRenderer.on(
+    MSG_BACKEND_TYPE.CONNECTION_CHANGED,
+    (_event, args) => {
+      connectionList = args
+      callback()
+    }
+  )
   return () => {
     off()
   }

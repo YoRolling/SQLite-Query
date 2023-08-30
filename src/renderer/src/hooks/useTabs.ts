@@ -1,4 +1,4 @@
-import { Tab } from '@src/common/types'
+import { MSG_BACKEND_TYPE, Tab } from '@src/common/types'
 import { useSyncExternalStore } from 'react'
 const { ipcRenderer } = window.electron
 let tabs: Tab[] = []
@@ -8,7 +8,7 @@ export default function useTabs() {
 }
 
 function subscribe(callback) {
-  const off = ipcRenderer.on('TAB_CHANGED', (_event, args) => {
+  const off = ipcRenderer.on(MSG_BACKEND_TYPE.TAB_CHANGED, (_event, args) => {
     tabs = args
     callback()
   })
