@@ -7,6 +7,7 @@ import { setupIpcHandle } from './libs/ipcHandle'
 import installExtension, {
   REACT_DEVELOPER_TOOLS
 } from 'electron-extension-installer'
+import { emitter } from './libs/eventbus'
 
 function createWindow(): void {
   // Create the browser window.
@@ -92,6 +93,10 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('before-quit', () => {
+  emitter.emit('BEFORE_QUIT')
 })
 
 // In this file you can include the rest of your app"s specific main process

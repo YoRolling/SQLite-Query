@@ -48,7 +48,8 @@
     "jotai": "^2.2.1",
     "mitt": "^3.0.0",
     "rxjs": "^7.8.1",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "yaml": "^2.3.2"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",

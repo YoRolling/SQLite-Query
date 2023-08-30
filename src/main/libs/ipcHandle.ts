@@ -20,9 +20,11 @@ import {
 } from '../../common/types'
 import { buildContextMenu } from './menu'
 import { emitter } from './eventbus'
-import { open } from 'fs/promises'
-import { createWriteStream } from 'fs'
+import { FileHandle, open } from 'fs/promises'
+import { createWriteStream, mkdir, existsSync } from 'fs'
 import { CONTEXT_MENU } from '../../common/const'
+import yaml from 'yaml'
+import path from 'path'
 /**
  * Connection Map
  */
@@ -46,7 +48,9 @@ const connectionSubject: Subject<{
   connection?: Connection
 }> = new Subject()
 let win: BrowserWindow | null = null
-
+const exePath = app.getPath('exe')
+const dataDir = path.resolve(exePath, '..', 'data')
+const filePath = path.resolve(dataDir, 'data.yaml')
 function send(
   channel: Extract<IPCMessage, 'CONNECTION_CHANGED' | 'TAB_CHANGED'>,
   payload: unknown
@@ -54,6 +58,7 @@ function send(
   win!.webContents.send(channel, payload)
 }
 export function setupIpcHandle(window: BrowserWindow) {
+  createDataDirWhenNotExist()
   win = window
   window.webContents.on('did-finish-load', () => {
     send('CONNECTION_CHANGED', connectionList)
@@ -158,6 +163,11 @@ export function setupIpcHandle(window: BrowserWindow) {
           })
           break
       }
+      try {
+        saveConnections()
+      } catch (error) {
+        // pass by
+      }
       send('CONNECTION_CHANGED', connectionList)
     })
 
@@ -179,9 +189,28 @@ function register<T>(channel: IPCMessage, handle: (args: T) => unknown) {
   })
 }
 
-function restoreStatus() {
+async function restoreStatus() {
   // restore connection list
   // restore Query tabs
+  let fd: FileHandle | null = null
+  try {
+    fd = await open(filePath)
+    const content = await fd.readFile('utf-8')
+    const list: Connection[] = yaml.parse(content) ?? []
+    connectionList = list.filter((v) => v.opened === false)
+    list
+      .filter((v) => v.opened)
+      .forEach((v) => {
+        if (v.opened) {
+          buildConnect({ ...v, type: ConnectionSetupType.Open })
+        }
+      })
+  } catch (error) {
+    // pass by
+  } finally {
+    fd?.close()
+  }
+  // send('CONNECTION_CHANGED', connectionList)
 }
 
 function buildConnect(options: ConnectionSetup): Connection {
@@ -190,7 +219,11 @@ function buildConnect(options: ConnectionSetup): Connection {
     timeout: 5e3,
     readonly: false
   })
-  const connection = { ...options, opened: true }
+  const connection = {
+    ...options,
+    opened: true,
+    type: ConnectionSetupType.Open
+  }
 
   connectionSubject.next({
     type: ActionType.Add,
@@ -482,4 +515,19 @@ function reLaunch() {
 
 function quit() {
   app.quit()
+}
+
+async function saveConnections() {
+  const fd = await open(filePath, 'w+')
+  const list = connectionList.filter((v) => v.path !== ':memory:')
+  const content = yaml.stringify(list)
+  fd.writeFile(content)
+  fd.close()
+}
+
+async function createDataDirWhenNotExist() {
+  const exist = existsSync(dataDir)
+  if (exist === false) {
+    mkdir(dataDir, { recursive: true }, () => {})
+  }
 }
