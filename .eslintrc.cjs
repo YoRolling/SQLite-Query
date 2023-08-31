@@ -43,7 +43,8 @@ module.exports = {
     ],
     '@typescript-eslint/no-explicit-any': 'error',
     '@typescript-eslint/no-non-null-assertion': 'off',
-    '@typescript-eslint/no-var-requires': 'off'
+    '@typescript-eslint/no-var-requires': 'off',
+    '@typescript-eslint/no-unused-vars': ['error', { vars: 'local' }]
   },
   overrides: [
     {
@@ -52,5 +53,10 @@ module.exports = {
         '@typescript-eslint/explicit-function-return-type': 'off'
       }
     }
-  ]
+  ],
+  settings: {
+    react: {
+      version: '18'
+    }
+  }
 }
