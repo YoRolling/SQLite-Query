@@ -1,4 +1,4 @@
-export type Connection = Omit<ConnectionSetup, 'type'> & {
+export type Connection = Omit<ConnectionSetup, 'exist'> & {
   opened: boolean
 }
 export type Tab = {
@@ -15,12 +15,13 @@ export type DialogRetureValue =
 export type ConnectionSetup = {
   label: string
   path: string
-  type: ConnectionSetupType
+  type: ConnectionType
   uuid: string
+  exist: boolean
 }
-export enum ConnectionSetupType {
-  Create = 1,
-  Open,
+
+export enum ConnectionType {
+  Local = 1,
   Memory
 }
 

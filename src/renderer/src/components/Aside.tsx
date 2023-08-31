@@ -15,6 +15,7 @@ import { emitter } from '@renderer/eventbus'
 import { useConnection } from '@renderer/hooks'
 import useIpcMsg from '@renderer/hooks/useIpcMsg'
 import { invokeIpc } from '@renderer/utils/ipcHelper'
+import { CONTEXT_MENU } from '@src/common/const'
 import {
   Connection,
   MSG_BACKEND_TYPE,
@@ -49,6 +50,17 @@ export default function Sidebar() {
     const uuid = msg as string
     if (uuid === activedConn) {
       selectTables(uuid)
+    }
+  })
+
+  useIpcMsg(MSG_BACKEND_TYPE.MENU_CLICKED, (payload: unknown) => {
+    const { id, args } = payload as { id: string; args: Connection }
+    switch (id) {
+      case CONTEXT_MENU.Edit_Connection:
+        emitter.emit('SETUP_CONNECTION_WITH_META', args)
+        break
+      default:
+        break
     }
   })
 

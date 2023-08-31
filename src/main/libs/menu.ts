@@ -8,6 +8,7 @@ import {
 import { CONTEXT_MENU } from '../../common/const'
 import {
   Connection,
+  ConnectionType,
   MenuType,
   MSG_BACKEND_TYPE,
   TableInfo
@@ -139,8 +140,24 @@ export function buildContextMenu(
 function buildDatabaseContextMenu(
   args: Connection
 ): MenuItemConstructorOptions[] {
+  const common: MenuItemConstructorOptions[] =
+    args.type === ConnectionType.Local
+      ? [
+          {
+            label: 'Edit Connection',
+            id: CONTEXT_MENU.Edit_Connection,
+            click: (item) => {
+              emitter.emit('MENU_CLICKED', {
+                action: item.id as CONTEXT_MENU,
+                payload: args
+              })
+            }
+          }
+        ]
+      : []
   if (args.opened === false) {
     return [
+      ...common,
       {
         label: 'Open Database',
         id: CONTEXT_MENU.Open_Database,
@@ -174,6 +191,9 @@ function buildDatabaseContextMenu(
         })
       }
     },
+    { type: 'separator' },
+    ...common,
+    { type: 'separator' },
     {
       label: 'Run SQL',
       id: CONTEXT_MENU.Run_SQL,

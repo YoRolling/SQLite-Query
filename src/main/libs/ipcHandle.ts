@@ -8,7 +8,7 @@ import {
   ActionType,
   Connection,
   ConnectionSetup,
-  ConnectionSetupType,
+  ConnectionType,
   IPCMessage,
   IpcResult,
   MSG_BACKEND_TYPE,
@@ -154,6 +154,9 @@ export function setupIpcHandle(window: BrowserWindow) {
         case ActionType.Initial:
           break
         case ActionType.Remove:
+          // eslint-disable-next-line no-case-declarations
+          const conn = connectionMap.get(id)
+          conn?.close()
           connectionMap.delete(id)
           connectionList = connectionList.filter((v) => {
             return v.uuid !== id
@@ -199,7 +202,10 @@ async function restoreStatus() {
       .filter((v) => v.opened)
       .forEach((v) => {
         if (v.opened) {
-          buildConnect({ ...v, type: ConnectionSetupType.Open })
+          buildConnect({
+            ...v,
+            exist: true
+          })
         }
       })
   } catch (error) {
@@ -212,22 +218,25 @@ async function restoreStatus() {
 
 function buildConnect(options: ConnectionSetup): Connection {
   const { path, uuid } = options
+
   const db = new Database(path, {
     timeout: 5e3,
     readonly: false
   })
-  const connection = {
+  const connection: Connection = {
     ...options,
-    opened: true,
-    type: ConnectionSetupType.Open
+    opened: true
   }
-
+  const exist = connectionMap.has(uuid)
   connectionSubject.next({
-    type: ActionType.Add,
+    type: exist ? ActionType.Patch : ActionType.Add,
     payload: db,
     id: uuid,
     connection: connection
   })
+  if (exist) {
+    send(MSG_BACKEND_TYPE.DATABASE_CHANGED, uuid)
+  }
   return connection
 }
 /**
@@ -269,8 +278,8 @@ function closeConnection({ uuid }: { uuid: string }) {
  * @author YoRolling
  *
  */
-function setupFilePicker(args: { type: ConnectionSetupType }) {
-  const { type } = args
+function setupFilePicker(args: { exist: boolean }) {
+  const { exist } = args
   const filters = [
     {
       name: 'SQLite DB',
@@ -278,7 +287,7 @@ function setupFilePicker(args: { type: ConnectionSetupType }) {
     },
     { name: 'All Files', extensions: ['*'] }
   ]
-  if (type === ConnectionSetupType.Create) {
+  if (exist === false) {
     return dialog.showSaveDialog({
       properties: ['createDirectory'],
       filters
@@ -333,7 +342,13 @@ function handleInnerEmit() {
       throw new Error('Function not implemented.')
     },
     [CONTEXT_MENU.Open_Database]: openConnection,
-    [CONTEXT_MENU.Delete_Database]: deleteConnection
+    [CONTEXT_MENU.Delete_Database]: deleteConnection,
+    [CONTEXT_MENU.Edit_Connection]: (conn) => {
+      send(MSG_BACKEND_TYPE.MENU_CLICKED, {
+        id: CONTEXT_MENU.Edit_Connection,
+        args: conn
+      })
+    }
   }
   emitter.on('MENU_CLICKED', (args) => {
     const { action, payload } = args

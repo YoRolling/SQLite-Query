@@ -1,5 +1,4 @@
 import { Text, Stack, Flex, Button, Space } from '@mantine/core'
-import { ConnectionSetupType } from '@src/common/types'
 import {
   IconFilePlus,
   IconDeviceDesktop,
@@ -9,12 +8,13 @@ import {
 import { emitter } from '@renderer/eventbus'
 import { useCallback, useEffect, useState } from 'react'
 import { useConnection } from '@renderer/hooks'
+import { ConnectionType } from '@src/common/types'
 
 export default function LandingPage() {
   const [visible, toggle] = useState(false)
   const [dismiss, visiblity] = useState(false)
-  const emit = useCallback((type: ConnectionSetupType) => {
-    emitter.emit('FIRE_DB_LOCATE', type)
+  const emit = useCallback((args: { type: ConnectionType; exist: boolean }) => {
+    emitter.emit('SETUP_CONNECTION_META', args)
   }, [])
   const [connectionList] = useConnection()
   useEffect(() => {
@@ -89,7 +89,7 @@ export default function LandingPage() {
           <Button
             leftIcon={<IconFilePlus size="1rem" />}
             onClick={() => {
-              emit(ConnectionSetupType.Create)
+              emit({ exist: false, type: ConnectionType.Local })
             }}
           >
             Create Database
@@ -98,7 +98,7 @@ export default function LandingPage() {
             color="indigo"
             leftIcon={<IconDeviceDesktop size="1rem" />}
             onClick={() => {
-              emit(ConnectionSetupType.Open)
+              emit({ exist: true, type: ConnectionType.Local })
             }}
           >
             Open Local Database
@@ -107,7 +107,7 @@ export default function LandingPage() {
             color="cyan"
             leftIcon={<IconDatabaseEdit size="1rem" />}
             onClick={() => {
-              emit(ConnectionSetupType.Memory)
+              emit({ exist: true, type: ConnectionType.Memory })
             }}
           >
             Open Memory Database
